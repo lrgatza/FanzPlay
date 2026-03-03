@@ -18,6 +18,8 @@ You can find information about the structure and design of our app in our [Desig
 
 ## Accessing and Running FanzPlay
 
+
+
 For detailed information on how to run the app, please refer to both the User Manual and the Adminstrator Manual on our app website in the section of [Documentation Plan](https://tarheels.live/comp523teami/documentation-plan/).
 
 You can also refer to your [Handoff Plan](https://tarheels.live/comp523teami/handoff-plan/) which includes helpful videos on how to access and run the app.
