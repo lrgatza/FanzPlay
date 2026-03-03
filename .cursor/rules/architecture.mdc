@@ -1,14 +1,14 @@
 ---
-description: Enforce Clean Architecture and directory standards
+description: Enforce Clean Architecture, Directory Standards, and Thin Routing
 globs: 
 alwaysApply: true
 ---
 # Architecture Standards
 
 - **Source Root**: All application code MUST reside in the `src/` directory.
-- **Routing**: Use Expo Router. All screen files must be in `src/app/`.
-- **Feature Modules**: Complex logic (User Stories) should be grouped in `src/features/[featureName]`.
-    - Example: `src/features/game/hooks/useTriviaLogic.ts`
-- **Imports**: Use absolute paths starting with `@/`. 
-    - Correct: `import { Button } from '@/components/Button'`
-    - Incorrect: `import { Button } from '../../components/Button'`
+- **Thin Routing**: Files in `src/app/` MUST be thin wrappers. They should only import and render components from `@/features`.
+    - *Example*: `src/app/(fan)/index.tsx` should only contain `<FanDashboard />`.
+- **Feature Modules**: Group business logic in `src/features/[featureName]`.
+    - Each feature should have its own `components/`, `hooks/`, and `services/` subfolders if they are not shared globally.
+- **Cross-Platform Entry**: Use `expo-router`. Ensure `_layout.tsx` files handle Global Providers (Auth, Theme, GameState).
+- **Imports**: Always use absolute paths with the `@/` alias defined in `tsconfig.json`.

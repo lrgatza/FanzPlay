@@ -1,14 +1,20 @@
 ---
+description: Best practices for React Native for Web with Native Parity
+globs: "**/*.{ts,tsx}"
 alwaysApply: true
-description: Best practices for React Native for Web
-globs: **/*.{ts,tsx}
 ---
-# React Native Web Standards
+# React Native Web & Mobile Standards
 
-- Use standard primitives: `View`, `Text`, `Pressable`, `StyleSheet`.
-- **Interactivity**: Use `Pressable` instead of `TouchableOpacity` for better web accessibility.
-- **Styling**: 
-    - Use `StyleSheet.create` for performance.
-    - Ensure layouts are responsive (use Flexbox).
-    - Avoid `window.innerHeight`; use `useWindowDimensions` hook for responsiveness.
-- **Platform Checks**: If a feature is mobile-only, use `Platform.OS === 'web'` to provide a fallback.
+- **Interactivity**: 
+    - Use `Pressable` instead of `TouchableOpacity` or `Button`. 
+    - For Web-first development, always define `pressStyle` or use `({ pressed }) => [...]` to ensure visual feedback exists on both click and touch.
+- **Layout & Keyboard**:
+    - All Input screens (Login, Signup, Reward Claim) MUST be wrapped in `KeyboardAvoidingView` with `behavior={Platform.OS === 'ios' ? 'padding' : 'height'}`.
+    - Use `ScrollView` for long forms to ensure they are scrollable when the mobile keyboard is open.
+- **Responsiveness**:
+    - Use `useWindowDimensions()` for layout logic rather than fixed pixel widths.
+    - Max-width constraints: On Web, center the app content (e.g., `maxWidth: 600, alignSelf: 'center'`) to mimic a mobile aspect ratio on large monitors.
+- **Platform Safety**:
+    - Avoid `window`, `document`, or `localStorage`. Use `Platform.select()` or `Platform.OS` for environment-specific logic.
+    - Use `Expo-Constants` for device-specific info.
+- **Touch Targets**: Ensure all interactive elements have a minimum size of `44x44` logic pixels for mobile accessibility.
