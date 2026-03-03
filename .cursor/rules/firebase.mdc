@@ -1,0 +1,12 @@
+---
+alwaysApply: false
+description: Standards for Firebase v10+ and Firestore
+globs: src/api/**/*, src/features/*/services/**/*
+---
+# Firebase Standards
+
+- Use **Firebase v10+ Modular SDK** (e.g., `import { getFirestore } from "firebase/firestore"`).
+- **Security**: Never hardcode API keys in the logic; assume they are in `.env`.
+- **Real-time**: For game questions and scores, use `onSnapshot`.
+- **Cleanup**: Always return the `unsubscribe()` function in `useEffect` to prevent memory leaks.
+- **Error Handling**: Wrap all Firebase calls in `try/catch` blocks and return a standardized error object.

@@ -1,0 +1,14 @@
+---
+alwaysApply: true
+description: Best practices for React Native for Web
+globs: **/*.{ts,tsx}
+---
+# React Native Web Standards
+
+- Use standard primitives: `View`, `Text`, `Pressable`, `StyleSheet`.
+- **Interactivity**: Use `Pressable` instead of `TouchableOpacity` for better web accessibility.
+- **Styling**: 
+    - Use `StyleSheet.create` for performance.
+    - Ensure layouts are responsive (use Flexbox).
+    - Avoid `window.innerHeight`; use `useWindowDimensions` hook for responsiveness.
+- **Platform Checks**: If a feature is mobile-only, use `Platform.OS === 'web'` to provide a fallback.

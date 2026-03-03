@@ -1,0 +1,14 @@
+---
+description: Enforce Clean Architecture and directory standards
+globs: 
+alwaysApply: true
+---
+# Architecture Standards
+
+- **Source Root**: All application code MUST reside in the `src/` directory.
+- **Routing**: Use Expo Router. All screen files must be in `src/app/`.
+- **Feature Modules**: Complex logic (User Stories) should be grouped in `src/features/[featureName]`.
+    - Example: `src/features/game/hooks/useTriviaLogic.ts`
+- **Imports**: Use absolute paths starting with `@/`. 
+    - Correct: `import { Button } from '@/components/Button'`
+    - Incorrect: `import { Button } from '../../components/Button'`
