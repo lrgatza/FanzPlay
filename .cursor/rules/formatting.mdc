@@ -1,0 +1,24 @@
+---
+alwaysApply: true
+description: Enforce code formatting, linting, and git-hook standards
+globs: **/*.{ts,tsx,js,jsx}
+---
+# Formatting & Quality Standards
+
+- You MUST use **ESLint** and **Prettier** for all TypeScript/JavaScript files.
+- Before completing a task, verify that the code follows these rules:
+    - Use 2 spaces for indentation.
+    - Use single quotes for strings (except in JSX).
+    - Always include trailing commas in multiline objects/arrays.
+    - Remove unused imports automatically.
+- After writing or modifying a file, run `npx eslint --fix [filename]` if the environment allows.
+- NEVER use `clang-format` or `python-black` for this project; strictly use **ESLint**.
+
+# Git Workflow & Hooks
+
+- **Pre-commit Enforcement**: This project uses `Husky` and `lint-staged` to run ESLint and Prettier before every commit.
+- **Agent Responsibility**: 
+    - If a commit fails due to the `pre-commit` hook, you MUST read the terminal output to identify the linting or formatting errors.
+    - Automatically fix the identified errors and re-attempt the commit.
+    - Do not suggest `git commit --no-verify` unless a conflict is strictly unresolvable.
+- **Commit Messages**: Follow [Conventional Commits](https://www.conventionalcommits.org/) (e.g., `feat: add game timer logic` or `fix: resolve firebase auth race condition`).
