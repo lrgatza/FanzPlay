@@ -10,15 +10,16 @@
 
 1. [Current State](#1-current-state)
 2. [Architecture Overview](#2-architecture-overview)
-3. [Phase 1: Foundation — Firebase, Types, Auth, Routing](#3-phase-1-foundation--firebase-types-auth-and-routing)
-4. [Phase 2: Admin Dashboard — Session & Question Management](#4-phase-2-admin-dashboard--session-and-question-management)
-5. [Phase 3: Fan Lobby — Game Selection, Team Selection, Waiting Room](#5-phase-3-fan-lobby--game-selection-team-selection-waiting-room)
-6. [Phase 4: Live Game Engine — Questions, Submissions, Admin Control](#6-phase-4-live-game-engine--questions-submissions-admin-control)
-7. [Phase 5: Scoring, Results, Winners, and Rewards](#7-phase-5-scoring-results-winners-and-rewards)
-8. [Phase 6: Security, Polish, and Hardening](#8-phase-6-security-polish-and-hardening)
-9. [Technical Risks and Mitigations](#9-technical-risks-and-mitigations)
-10. [Implementation Order Rationale](#10-implementation-order-rationale)
-11. [Conventions and Quality Guardrails](#11-conventions-and-quality-guardrails)
+3. [FanzPlay UI & Design System](#3-fanzplay-ui--design-system)
+4. [Phase 1: Foundation — Firebase, Types, Auth, Routing](#4-phase-1-foundation--firebase-types-auth-and-routing)
+5. [Phase 2: Admin Dashboard — Session & Question Management](#5-phase-2-admin-dashboard--session-and-question-management)
+6. [Phase 3: Fan Lobby — Game Selection, Team Selection, Waiting Room](#6-phase-3-fan-lobby--game-selection-team-selection-waiting-room)
+7. [Phase 4: Live Game Engine — Questions, Submissions, Admin Control](#7-phase-4-live-game-engine--questions-submissions-admin-control)
+8. [Phase 5: Scoring, Results, Winners, and Rewards](#8-phase-5-scoring-results-winners-and-rewards)
+9. [Phase 6: Security, Polish, and Hardening](#9-phase-6-security-polish-and-hardening)
+10. [Technical Risks and Mitigations](#10-technical-risks-and-mitigations)
+11. [Implementation Order Rationale](#11-implementation-order-rationale)
+12. [Conventions and Quality Guardrails](#12-conventions-and-quality-guardrails)
 
 ---
 
@@ -246,7 +247,139 @@ interface GameSession {
 
 ---
 
-## 3. Phase 1: Foundation — Firebase, Types, Auth, and Routing
+## 3. FanzPlay UI & Design System
+
+FanzPlay’s front end must feel **clean, minimalistic, modern, and playful**, inspired by `kahoot.it` but tailored to the FanzPlay brand. This section defines the **single source of truth** for UI and layout so every phase that touches the front end automatically reuses the same patterns.
+
+### 3.1 Brand Palette & Theme Tokens
+
+All UI colors come from `src/constants/theme.ts`. For FanzPlay, use this palette:
+
+```typescript
+export const AppColors = {
+  // Core brand
+  primary: '#1a2323',   // primary surface / ink
+  accent: '#daec00',    // call-to-action, highlights
+  secondary: '#ffffff', // cards, secondary surfaces
+
+  // Derived tokens
+  bgPrimary: '#1a2323',
+  bgSecondary: '#ffffff',
+  bgElevated: '#111717',
+
+  textPrimary: '#ffffff',
+  textSecondary: '#e2e5e5',
+  textMuted: '#9aa2a2',
+
+  borderSubtle: '#2a3333',
+  borderStrong: '#4a5555',
+
+  accentSoft: 'rgba(218, 236, 0, 0.16)',
+};
+```
+
+- **No ad-hoc hex codes** in components. All new UI must use tokens from `AppColors` (or clearly derived tokens added here).
+- The app supports dark-on-light and light-on-dark by adjusting surfaces and text tokens, but the **brand colors remain** `#1a2323`, `#daec00`, `#ffffff`.
+
+### 3.2 Typography & Hierarchy
+
+Typography is defined at the theme level and exposed through `ThemedText` variants. Use **semantic text roles**, not raw font sizes:
+
+- `headingXL`: rare hero titles (e.g., end-of-game winner, marketing hero).
+- `headingL`: screen titles (e.g., "Login", "Admin Dashboard", "Waiting Room").
+- `headingM`: section titles and card titles.
+- `body`: primary text.
+- `bodySmall`: supporting text, helper copy, metadata.
+- `label`: form labels and chip labels.
+
+Every screen should:
+
+- Have exactly one dominant `headingL` title.
+- Use `headingM` to separate logical sections.
+- Keep `headingXL` usage minimal so it feels special.
+
+### 3.3 Layout, Spacing, and Responsiveness
+
+FanzPlay is **mobile-first** but must feel natural on tablets and desktop web.
+
+- Use a spacing scale of `4, 8, 12, 16, 24, 32` for padding, margin, and gaps.
+- Avoid fixed pixel widths where possible; prefer `flex` and percentage-based widths.
+- On web, constrain content to a central column:
+  - `maxWidth: 600` for most flows (auth, game screens, fan lobby).
+  - `alignSelf: 'center'` with horizontal padding (e.g., 16–24) for breathing room.
+- Use `useWindowDimensions()` to adapt:
+  - **Compact (phones)**: single-column layouts, full-width buttons.
+  - **Medium/Large (tablets/desktop)**: center content with more generous padding, optional side-by-side cards where it improves clarity.
+
+All front-end screens should be built on a shared `ScreenContainer` layout component that:
+
+- Provides safe-area padding.
+- Sets background (`bgPrimary` or `bgSecondary` depending on route).
+- Applies horizontal padding and max-width for web.
+- Optionally spaces content vertically using the spacing scale.
+
+### 3.4 UI Primitives (Buttons, Cards, Inputs)
+
+Create a small, reusable UI kit (e.g., `src/features/ui/` or `src/components/ui/`) and require all feature modules to use it:
+
+- **Button** (built on `Pressable`):
+  - Variants: `primary`, `secondary`, `ghost`.
+  - Full-width by default on phones; auto-fit on larger screens.
+  - Uses `({ pressed }) =>` styles for opacity / background feedback.
+  - Minimum touch target `44x44`.
+- **IconButton**:
+  - For small icon-only actions (e.g., close, info).
+  - Uses the same press feedback and touch target rules.
+- **Card**:
+  - For groupings like sessions, questions, results, dashboard panels.
+  - Uses `bgSecondary`, subtle border, and elevation via shadow on native.
+- **Chip/Pill**:
+  - For statuses (e.g., "Active", "Completed") or small labels (e.g., team tags).
+- **TextField**:
+  - Label, input, helper/error text as a single component.
+  - Error state: subtle border color change + small error text; no harsh backgrounds.
+
+All interactive elements (buttons, cards that navigate, options) must use `Pressable` under the hood for consistent touch/press feedback across platforms.
+
+### 3.5 Inputs, Forms, and Keyboard Handling
+
+All input-heavy screens (login, signup, reward claim, admin forms) must:
+
+- Be wrapped in `KeyboardAvoidingView` with platform-specific behavior, plus `ScrollView` to remain usable when the keyboard is open.
+- Use the shared `TextField` and `Button` components; no one-off input styles.
+- Align labels and inputs consistently (e.g., labels above inputs, left-aligned).
+- Provide inline validation/error messages via the same `TextField` API.
+
+### 3.6 Cross-Platform Behavior
+
+- Do not access `window`, `document`, or `localStorage` directly. Use React Native and Expo abstractions (`Platform`, secure storage, etc.).
+- All UI components must be tested and designed to scale **automatically** with screen size, using:
+  - `flex` layouts,
+  - central column on wide screens,
+  - full-width stacked layout on narrow screens.
+
+### 3.7 Design System Flow
+
+The design system feeds into primitives, which feed into feature screens:
+
+```mermaid
+flowchart TD
+  themeTokens[themeTokens] --> uiPrimitives[uiPrimitives]
+  uiPrimitives --> featureScreens[featureScreens]
+  themeTokens --> layoutComponents[layoutComponents]
+  layoutComponents --> featureScreens
+```
+
+- `themeTokens`: Colors, typography, spacing defined in `theme.ts`.
+- `uiPrimitives`: `Button`, `Card`, `TextField`, `Chip`, etc.
+- `layoutComponents`: `ScreenContainer`, layout wrappers for stacks and groups.
+- `featureScreens`: Auth, admin, fan, rewards screens that **must use** primitives and layout components, not ad-hoc styles.
+
+Any AI or human implementing FanzPlay UI should first update or extend the design system here, then consume it from feature code.
+
+---
+
+## 4. Phase 1: Foundation — Firebase, Types, Auth, and Routing
 
 **Goal:** A user can sign up, log in, and be routed to the correct layout group based on their role.
 
@@ -342,6 +475,14 @@ Prevents typo bugs when referencing collection names across services.
 - `src/features/auth/components/LoginScreen.tsx`
 - `src/features/auth/components/SignupScreen.tsx` — includes marketing opt-in checkbox + team selection
 
+Both `LoginScreen` and `SignupScreen` must:
+
+- Use the shared `ScreenContainer` layout with `bgPrimary` background and centered column.
+- Use `TextField` primitives for email, password, and any additional fields, with inline error text.
+- Use a `primary` `Button` for the main call-to-action and a `ghost` button for secondary navigation (e.g., "Already have an account? Log in").
+- Wrap content in `KeyboardAvoidingView` + `ScrollView` for mobile keyboards.
+- Keep visuals minimal and modern: one `headingL` title (e.g., "Welcome to FanzPlay"), a short `body` subtitle, and a small form card using `Card`.
+
 **Service pattern (`authService.ts`):**
 
 ```typescript
@@ -429,11 +570,16 @@ useEffect(() => {
 
 Uses `router.replace` (not `push`) per blueprint navigation constraints to prevent back-navigation into wrong role layouts.
 
+Root and group layouts should:
+
+- Wrap stacks in a shared layout component (e.g., `ScreenContainer`) that applies background colors, max-width, and padding from the design system.
+- Use simple, fast screen transitions (no distracting animations).
+
 ---
 
-## 4. Phase 2: Admin Dashboard — Session and Question Management
+## 5. Phase 2: Admin Dashboard — Session and Question Management
 
-**Goal:** Admin can create game sessions, add questions, assign teams and sponsors, and see a list of sessions.
+**Goal:** Admin can create game sessions, add questions, assign teams and sponsors, and see a list of sessions, within a clear and minimal dashboard UI.
 
 ### 2A. Teams and Sponsors Seed Data / Management
 
@@ -442,7 +588,14 @@ Uses `router.replace` (not `push`) per blueprint navigation constraints to preve
 - `src/features/teams/services/teamService.ts` — `getTeams()`, `createTeam()`, `resetSessionScores()`
 - `src/features/teams/hooks/useTeams.ts` — real-time team list via `onSnapshot`
 
-For the prototype, teams and sponsors can be seeded via the admin dashboard or a setup script. Minimal UI: a form to create teams and sponsors if none exist.
+For the prototype, teams and sponsors can be seeded via the admin dashboard or a setup script.
+
+Admin-facing UIs in this phase should:
+
+- Use `ScreenContainer` with a `headingL` screen title and short subtitle.
+- Represent team and sponsor items inside `Card` components with clear `headingM` titles and `bodySmall` metadata.
+- Use `TextField` and `Button` primitives for any forms (e.g., creating a team or sponsor).
+- On web, keep content within a centered column; on mobile, stack cards vertically with full-width buttons and clear spacing.
 
 ### 2B. Question Management
 
@@ -450,7 +603,11 @@ For the prototype, teams and sponsors can be seeded via the admin dashboard or a
 
 - `src/features/admin/services/questionService.ts` — CRUD for questions
 
-Admin dashboard includes a section to create/edit questions with: text, options (A–D), correctOptionId, points, timerSeconds.
+Admin dashboard includes a section to create/edit questions with: text, options (A–D), correctOptionId, points, timerSeconds. The question editor should:
+
+- Use `TextField` for question text and options.
+- Use a simple, uncluttered layout grouped in a `Card`.
+- Use `Chip` or similar UI to indicate question status (e.g., "Active in session" vs. "Draft").
 
 ### 2C. Session Setup
 
@@ -485,11 +642,16 @@ Admin dashboard includes a section to create/edit questions with: text, options 
 - `src/app/(admin)/session-setup.tsx` — `<SessionSetupScreen />`
 - `src/app/(admin)/live-control/[sessionId].tsx` — placeholder (built in Phase 4)
 
+Admin dashboard and session setup UI should be designed to work well on both desktop web and mobile:
+
+- On wide screens, arrange cards in responsive grids within the max-width container.
+- On small screens, stack everything vertically with full-width buttons and clear spacing.
+
 ---
 
-## 5. Phase 3: Fan Lobby — Game Selection, Team Selection, Waiting Room
+## 6. Phase 3: Fan Lobby — Game Selection, Team Selection, Waiting Room
 
-**Goal:** Fan can browse active sessions, confirm/select a team, and enter the lobby waiting room with live team standings.
+**Goal:** Fan can browse active sessions, confirm/select a team, and enter the lobby waiting room with live team standings, using a clean and playful UI that feels consistent across devices.
 
 ### 3A. Game Selection
 
@@ -499,6 +661,13 @@ Admin dashboard includes a section to create/edit questions with: text, options 
 - `src/features/game/hooks/useGameSessions.ts` — real-time list of joinable sessions
 - `src/features/game/components/GameSelectionScreen.tsx` — card list of available sessions with sponsor branding
 
+`GameSelectionScreen` should:
+
+- Use `ScreenContainer` with a `headingL` title (e.g., "Choose a Game") and short `body` subtitle.
+- Render each joinable session as a large, tappable `Card` using `bgSecondary`, with sponsor info and session name.
+- Use accent details (e.g., small badge or dot) to indicate live/soon sessions, without overwhelming the screen.
+- Use full-width cards on phones; on wider screens, optionally arrange cards in a responsive grid within the max-width container.
+
 ### 3B. Team Selection
 
 **Files:**
@@ -507,6 +676,12 @@ Admin dashboard includes a section to create/edit questions with: text, options 
 - `src/features/teams/hooks/useTeams.ts` — (already created in Phase 2)
 
 If the user already has a `teamId` that matches a team in the session, skip this screen. Otherwise, force selection and update their user document.
+
+`TeamSelectionScreen` should:
+
+- Present teams as big, tappable `Card` or `Chip` elements with strong selection state.
+- On press, show immediate visual feedback (opacity/scale) and a persistent accent-colored border or background for the selected team.
+- Keep layout minimal with one `headingL` and simple supporting copy; no extra clutter.
 
 ### 3C. GameStateProvider — The Central Real-Time Hub
 
@@ -540,6 +715,12 @@ interface GameStateContextValue {
 
 The lobby screen consumes `useGameState()` and programmatically navigates when `questionActive` becomes `true`.
 
+`LobbyScreen` should:
+
+- Feature a centered main message (e.g., `headingL`: "Waiting for game to start") and sponsor branding within a `Card`.
+- Show live team standings using a simple list or bar-style representation inside cards, with accent used sparingly to highlight leading teams.
+- Use responsive layouts so standings appear as a single column on mobile and can expand to multi-column or larger cards on wider screens.
+
 ### 3E. Fan Route Screens
 
 - `src/app/(fan)/game-selection.tsx`
@@ -548,9 +729,9 @@ The lobby screen consumes `useGameState()` and programmatically navigates when `
 
 ---
 
-## 6. Phase 4: Live Game Engine — Questions, Submissions, Admin Control
+## 7. Phase 4: Live Game Engine — Questions, Submissions, Admin Control
 
-**Goal:** Full real-time question/answer loop. Admin triggers questions, fans answer, scores update.
+**Goal:** Full real-time question/answer loop. Admin triggers questions, fans answer, scores update, all within focused, easy-to-understand UIs.
 
 ### 4A. Admin Live Control Panel
 
@@ -573,6 +754,12 @@ The lobby screen consumes `useGameState()` and programmatically navigates when `
 3. **"End Session"** button:
    - Sets `status: 'completed'`
 
+`LiveControlScreen` should:
+
+- Use `ScreenContainer` with clear sections in `Card` components (current question, upcoming question, controls).
+- Use `primary` buttons for core actions ("Push Next Question", "Close Question", "End Session") and keep the rest of the UI minimal.
+- Avoid noisy visualizations; show only essential status indicators so admins can act quickly.
+
 ### 4B. Question Screen (Fan)
 
 **Files:**
@@ -592,6 +779,14 @@ function useCountdown(startTime: Timestamp | null, durationSeconds: number) {
 ```
 
 The timer is derived from server `questionStartTime` to minimize drift.
+
+`QuestionScreen` should:
+
+- Use a full-screen `ScreenContainer` with a high-contrast question `Card` centered in the layout.
+- Display question text using `headingL` or `headingM` with comfortable line length.
+- Render answer options as large `Pressable`-backed buttons or cards stacked vertically (or in a simple grid on larger screens), with strong pressed feedback and minimum `44x44` touch size.
+- Use accent color for the countdown timer (e.g., chip or horizontal progress bar) while keeping the overall design minimal.
+- Disable options immediately after selection and show a brief confirmation message ("Answer recorded") before navigating to the waiting screen.
 
 **Question screen navigation flow (driven by `useGameState`):**
 
@@ -673,6 +868,11 @@ Uses `writeBatch` to ensure all three writes (submission, user score, team score
 - When `isQuestionActive` becomes `true` again (next question), auto-navigates to question screen
 - **Back navigation blocked**: use `router.replace` (not `push`) for all game-loop navigations, and configure the Stack to prevent gesture-back
 
+`WaitingScreen` should:
+
+- Present a calm, minimal state with a large heading, short supporting text, and an optional subtle animated element (e.g., loading indicator) using accent color.
+- Keep the background simple and avoid distracting visuals so fans remain focused on the game state.
+
 ### 4F. Navigation State Machine (Fan Game Loop)
 
 ```
@@ -709,9 +909,9 @@ This state machine is driven entirely by the `GameStateProvider`'s `onSnapshot` 
 
 ---
 
-## 7. Phase 5: Scoring, Results, Winners, and Rewards
+## 8. Phase 5: Scoring, Results, Winners, and Rewards
 
-**Goal:** End-game flow with results display, winner identification, reward claiming, and admin CSV export.
+**Goal:** End-game flow with results display, winner identification, reward claiming, and admin CSV export, presented in a celebratory but clean UI.
 
 ### 5A. Results Screen
 
@@ -734,6 +934,13 @@ const q = query(
 );
 ```
 
+`ResultsScreen` should:
+
+- Use a hero `Card` for the winning team with `accent` accents and a large `headingXL` or `headingL` title.
+- Show a compact leaderboard using cards or a simple list with `headingM` for team names and `body` for scores.
+- Present the fan's personal stats in a secondary card, clearly indicating their performance.
+- Use a prominent `primary` `Button` for "Claim Reward" (when applicable), and keep surrounding UI minimal.
+
 ### 5B. Reward Claim
 
 **Files:**
@@ -743,6 +950,12 @@ const q = query(
 - `src/features/rewards/components/RewardClaimScreen.tsx` — contact info form (email, phone), confirm, write to `rewards_claims`
 
 Per blueprint: Firestore security rules must validate `marketingOptIn === true` before allowing a write to `rewards_claims`.
+
+`RewardClaimScreen` should:
+
+- Use `ScreenContainer` and a single, focused form card built from `TextField` primitives.
+- Keep copy concise, with a small helper line explaining why data is collected.
+- Use one primary `Button` as the main CTA and avoid competing actions.
 
 ### 5C. Admin CSV Export
 
@@ -760,7 +973,7 @@ On web: trigger download via `Blob` + `URL.createObjectURL`. On native: use `exp
 
 ---
 
-## 8. Phase 6: Security, Polish, and Hardening
+## 9. Phase 6: Security, Polish, and Hardening
 
 ### 6A. Firestore Security Rules
 
@@ -781,6 +994,7 @@ Key rules:
 - Add a reusable `<ErrorBoundary>` component wrapping each route group
 - All hooks return `{ data, isLoading, error }` triple
 - Screens show skeleton/spinner during `isLoading` and error UI on failure
+- Use shared `LoadingState` and `ErrorState` UI primitives (e.g., centered spinner + message, or icon + explanation + retry button) that follow the FanzPlay color palette, instead of bespoke per-screen designs.
 
 ### 6C. Firestore Composite Indexes
 
@@ -792,22 +1006,15 @@ Required indexes (defined in `firestore.indexes.json`):
 
 ### 6D. Theme Extension
 
-Extend `src/constants/theme.ts` with FanzPlay brand colors:
+Extend `src/constants/theme.ts` to match the FanzPlay design system:
 
-```typescript
-export const AppColors = {
-  primary: '#1A73E8',
-  success: '#34A853',
-  danger: '#EA4335',
-  warning: '#FBBC04',
-  surface: '#F8F9FA',
-  onSurface: '#202124',
-};
-```
+- Implement the `AppColors` object exactly as defined in the **FanzPlay UI & Design System** section.
+- Add any additional tokens (e.g., spacing, typography variants) here rather than hard-coding values in components.
+- Ensure both web and native clients read from the same theme source so visuals remain consistent.
 
 ---
 
-## 9. Technical Risks and Mitigations
+## 10. Technical Risks and Mitigations
 
 ### Risk 1: Race Condition on Answer Submission (Double-Tap / Multi-Device)
 
@@ -844,7 +1051,7 @@ export const AppColors = {
 
 ---
 
-## 10. Implementation Order Rationale
+## 11. Implementation Order Rationale
 
 The phase order is specifically designed so that **at the end of every phase, the app is testable end-to-end** for what has been built:
 
@@ -859,12 +1066,16 @@ Phase 2 (Admin) is placed before Phase 3 (Fan Lobby) because **without admin-cre
 
 ---
 
-## 11. Conventions and Quality Guardrails
+## 12. Conventions and Quality Guardrails
 
 - **Thin route files**: Every file in `src/app/` contains at most an import and a single component render. Zero business logic.
 - **Absolute imports only**: All imports use `@/` prefix. No relative `../../` paths.
-- **Pressable everywhere**: No `TouchableOpacity` or `Button`. All interactive elements use `Pressable` with `({ pressed })` feedback.
-- **KeyboardAvoidingView**: All input screens (login, signup, reward claim) wrapped per the cursor rule.
+- **Pressable everywhere**: No `TouchableOpacity` or `Button`. All interactive elements use `Pressable` with `({ pressed })` feedback and, where appropriate, the shared `Button`, `IconButton`, or `Card` primitives.
+- **KeyboardAvoidingView**: All input screens (login, signup, reward claim, admin forms) wrapped per the cursor rule and using the shared `ScreenContainer` and `TextField` components.
+- **Design system first**: Any new or updated UI must:
+  - Extend or reuse `AppColors`, typography, and spacing tokens in `theme.ts`.
+  - Use the shared UI primitives from the FanzPlay design system (`Button`, `Card`, `TextField`, `Chip`, `ScreenContainer`, etc.).
+  - Be verified on both small (mobile) and large (desktop web) viewports for correct scaling and readability.
 - **Error handling**: All service functions are wrapped in `try/catch` and return a standardized `{ data, error }` shape.
 - **Hook return shape**: `{ data: T | null, isLoading: boolean, error: string | null }` for all data-fetching hooks.
 - **Conventional commits**: `feat:`, `fix:`, `refactor:`, `chore:` prefixes.
