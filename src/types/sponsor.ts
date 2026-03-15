@@ -5,5 +5,6 @@ export interface Sponsor {
   name: string;
   logoUrl: string | null;
   primaryColor: string | null;
+  rewardDescription: string | null;
   createdAt: Timestamp;
 }

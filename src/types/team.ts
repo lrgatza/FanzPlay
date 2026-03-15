@@ -5,5 +5,6 @@ export interface Team {
   name: string;
   logoUrl: string | null;
   currentSessionScore: number;
+  allTimeScore: number;
   createdAt: Timestamp;
 }
