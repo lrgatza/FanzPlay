@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 
+import { Button } from '@/components/ui/Button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { AppColors, Spacing, Typography } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -63,8 +64,13 @@ function SessionCard({
 
 export function GameSelectionScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { sessions, isLoading } = useGameSessions();
+
+  async function handleSignOut() {
+    await signOut();
+    router.replace('/(auth)/login');
+  }
 
   function handleSelectSession(session: GameSession) {
     if (!user) return;
@@ -85,8 +91,18 @@ export function GameSelectionScreen() {
   return (
     <ScreenContainer>
       <View style={styles.header}>
-        <Text style={styles.title}>FanzPlay</Text>
-        <Text style={styles.subtitle}>Select a game to join</Text>
+        <View style={styles.headerText}>
+          <Text style={styles.title}>FanzPlay</Text>
+          <Text style={styles.subtitle}>
+            Welcome, {user?.displayName ?? 'Fan'}
+          </Text>
+        </View>
+        <Button
+          label="Sign Out"
+          variant="ghost"
+          fullWidth={false}
+          onPress={handleSignOut}
+        />
       </View>
 
       {isLoading ? (
@@ -122,7 +138,13 @@ export function GameSelectionScreen() {
 
 const styles = StyleSheet.create({
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: Spacing.lg,
+  },
+  headerText: {
+    gap: Spacing.xs,
   },
   title: {
     ...Typography.headingXL,
