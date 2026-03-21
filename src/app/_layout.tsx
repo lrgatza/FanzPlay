@@ -35,13 +35,13 @@ function RootLayoutInner() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <RoleGatekeeper>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(fan)" />
-          <Stack.Screen name="(admin)" />
-        </Stack>
-      </RoleGatekeeper>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(fan)" />
+        <Stack.Screen name="(admin)" />
+      </Stack>
+      <RoleGatekeeper>{null}</RoleGatekeeper>
       <StatusBar style="light" />
     </ThemeProvider>
   );
