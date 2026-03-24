@@ -1,15 +1,10 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { AppColors, Spacing, Typography } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -65,7 +60,7 @@ function SessionCard({
 export function GameSelectionScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { sessions, isLoading } = useGameSessions();
+  const { sessions, isLoading, error } = useGameSessions();
 
   async function handleSignOut() {
     await signOut();
@@ -106,9 +101,9 @@ export function GameSelectionScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={AppColors.accent} size="large" />
-        </View>
+        <LoadingState message="Loading games…" />
+      ) : error ? (
+        <ErrorState message={error} />
       ) : sessions.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyIcon}>🏟️</Text>
