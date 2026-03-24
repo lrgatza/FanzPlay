@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { AppColors, Spacing, Typography } from '@/constants/theme';
+import { exportRewardClaimsAsCsv } from '@/features/admin/services/exportService';
 import {
   closeQuestion,
   endSession,
@@ -42,6 +43,8 @@ export function LiveControlScreen() {
   const [isPushing, setIsPushing] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -103,6 +106,18 @@ export function LiveControlScreen() {
         }
       },
     );
+  }
+
+  async function handleExportCsv() {
+    setIsExporting(true);
+    setExportError(null);
+    try {
+      await exportRewardClaimsAsCsv(sessionId);
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : 'Failed to export CSV.');
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   if (isLoading || !session) {
@@ -235,6 +250,17 @@ export function LiveControlScreen() {
           <Text style={styles.completedText}>
             Session is complete. Fans are on the results screen.
           </Text>
+          <Button
+            label={isExporting ? 'Exporting…' : 'Export Winners CSV'}
+            variant="secondary"
+            onPress={handleExportCsv}
+            loading={isExporting}
+            disabled={isExporting}
+            style={styles.exportBtn}
+          />
+          {exportError ? (
+            <Text style={styles.exportErrorText}>{exportError}</Text>
+          ) : null}
         </View>
       )}
     </ScreenContainer>
@@ -333,5 +359,15 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: AppColors.accent,
     textAlign: 'center',
+    marginBottom: Spacing.base,
+  },
+  exportBtn: {
+    marginTop: Spacing.xs,
+  },
+  exportErrorText: {
+    ...Typography.bodySmall,
+    color: '#ff6b6b',
+    textAlign: 'center',
+    marginTop: Spacing.xs,
   },
 });

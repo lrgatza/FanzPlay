@@ -6,6 +6,7 @@ export interface RewardClaim {
   id: string;
   uid: string;
   sessionId: string;
+  sponsorId: string;
   email: string;
   phone: string | null;
   status: ClaimStatus;

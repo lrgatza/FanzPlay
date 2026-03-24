@@ -8,5 +8,6 @@ export interface Submission {
   teamId: string;
   selectedOptionId: string;
   isCorrect: boolean | null;
+  pointsEarned: number | null;
   answeredAt: Timestamp;
 }
