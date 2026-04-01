@@ -1,0 +1,135 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && getUserData().role == 'admin';
+    }
+
+    function hasMarketingOptIn() {
+      return isSignedIn() && getUserData().marketingOptIn == true;
+    }
+
+    // ── users ──────────────────────────────────────────────────────────────
+    // Fans read/create/update their own document.
+    // Admins can read any user document.
+    // Updates must not change `role` or `uid`.
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+
+      allow create: if isOwner(uid)
+        && request.resource.data.role == 'fan'
+        && request.resource.data.uid == uid;
+
+      allow update: if isOwner(uid)
+        && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['role', 'uid']);
+
+      allow delete: if false;
+    }
+
+    // ── game_sessions ──────────────────────────────────────────────────────
+    // Any authenticated user can read sessions.
+    // Only admins can write.
+
+    match /game_sessions/{sessionId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── questions ──────────────────────────────────────────────────────────
+    // Only admins can access. Fans must never read correctOptionId directly.
+
+    match /questions/{questionId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── submissions ────────────────────────────────────────────────────────
+    // Compound document ID: {sessionId}_{questionId}_{uid}
+    // Fans can create their own submission (id validated, isCorrect/pointsEarned null).
+    // After reveal, fans can update only isCorrect and pointsEarned on their own doc.
+    // No deletions allowed.
+
+    match /submissions/{submissionId} {
+      allow read: if isSignedIn()
+        && (resource.data.uid == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && submissionId == request.resource.data.sessionId
+            + '_' + request.resource.data.questionId
+            + '_' + request.auth.uid
+        && request.resource.data.isCorrect == null
+        && request.resource.data.pointsEarned == null;
+
+      allow update: if isSignedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['isCorrect', 'pointsEarned']);
+
+      allow delete: if false;
+    }
+
+    // ── teams ──────────────────────────────────────────────────────────────
+    // Any authenticated user can read.
+    // Admins can create/delete.
+    // Admins can update any field; fans can update only currentSessionScore.
+
+    match /teams/{teamId} {
+      allow read: if isSignedIn();
+
+      allow create, delete: if isAdmin();
+
+      allow update: if isAdmin()
+        || (isSignedIn()
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['currentSessionScore']));
+    }
+
+    // ── sponsors ───────────────────────────────────────────────────────────
+    // Any authenticated user can read. Only admins can write.
+
+    match /sponsors/{sponsorId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ── rewards_claims ─────────────────────────────────────────────────────
+    // Compound document ID: {uid}_{sessionId}
+    // Create requires marketingOptIn == true on the caller's user doc.
+    // Admins can update only the `status` field.
+    // No deletions allowed.
+
+    match /rewards_claims/{claimId} {
+      allow read: if isSignedIn()
+        && (resource.data.uid == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && claimId == request.resource.data.uid
+            + '_' + request.resource.data.sessionId
+        && hasMarketingOptIn();
+
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status']);
+
+      allow delete: if false;
+    }
+  }
+}

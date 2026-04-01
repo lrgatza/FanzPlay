@@ -14,18 +14,23 @@ import { type GameSession } from '@/types';
 
 export function subscribeToActiveSessions(
   cb: (sessions: GameSession[]) => void,
+  onError?: (error: Error) => void,
 ): Unsubscribe {
   const q = query(
     collection(db, COLLECTIONS.GAME_SESSIONS),
     where('status', 'in', ['lobby', 'active']),
   );
-  return onSnapshot(q, (snap) => {
-    const sessions = snap.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<GameSession, 'id'>),
-    }));
-    cb(sessions);
-  });
+  return onSnapshot(
+    q,
+    (snap) => {
+      const sessions = snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<GameSession, 'id'>),
+      }));
+      cb(sessions);
+    },
+    onError,
+  );
 }
 
 export function subscribeToSession(

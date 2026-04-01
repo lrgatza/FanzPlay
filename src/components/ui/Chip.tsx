@@ -60,12 +60,12 @@ const styles = StyleSheet.create({
     color: AppColors.textMuted,
   },
   successLabel: {
-    color: '#34c759',
+    color: AppColors.success,
   },
   warningLabel: {
-    color: '#ff9500',
+    color: AppColors.warning,
   },
   dangerLabel: {
-    color: '#ff3b30',
+    color: AppColors.danger,
   },
 });

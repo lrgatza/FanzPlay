@@ -1,10 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { AppColors, Spacing, Typography } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -82,10 +84,11 @@ export function ResultsScreen() {
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
   const { user } = useAuth();
   const { teams, session, isLoading: gameLoading } = useGameState();
-  const { sessionScore, isLoading: scoreLoading } = useSessionResults(
-    sessionId,
-    user?.uid,
-  );
+  const {
+    sessionScore,
+    isLoading: scoreLoading,
+    error: scoreError,
+  } = useSessionResults(sessionId, user?.uid);
 
   const isLoading = gameLoading || scoreLoading;
 
@@ -112,9 +115,15 @@ export function ResultsScreen() {
   if (isLoading) {
     return (
       <ScreenContainer>
-        <View style={styles.center}>
-          <ActivityIndicator color={AppColors.accent} size="large" />
-        </View>
+        <LoadingState message="Loading results…" />
+      </ScreenContainer>
+    );
+  }
+
+  if (scoreError) {
+    return (
+      <ScreenContainer>
+        <ErrorState message={scoreError} />
       </ScreenContainer>
     );
   }
@@ -183,11 +192,6 @@ export function ResultsScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   title: {
     ...Typography.headingL,
     color: AppColors.textPrimary,

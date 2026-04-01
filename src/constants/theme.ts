@@ -17,6 +17,11 @@ export const AppColors = {
   borderStrong: '#4a5555',
 
   accentSoft: 'rgba(218, 236, 0, 0.16)',
+
+  // Semantic status colors
+  success: '#34c759',
+  danger: '#ff3b30',
+  warning: '#ff9500',
 };
 
 export const Spacing = {
