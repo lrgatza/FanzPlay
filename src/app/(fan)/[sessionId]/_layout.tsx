@@ -60,6 +60,7 @@ export default function SessionLayout() {
         <Stack.Screen name="question" />
         <Stack.Screen name="waiting" />
         <Stack.Screen name="results" />
+        <Stack.Screen name="reward-claim" />
       </Stack>
       <GameStateMachine sessionId={sessionId} />
     </GameStateProvider>

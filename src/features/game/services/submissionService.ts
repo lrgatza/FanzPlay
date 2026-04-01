@@ -40,7 +40,10 @@ export async function computeAndRecordScore(
   const isCorrect = selectedOptionId === correctOptionId;
   const batch = writeBatch(db);
 
-  batch.update(doc(db, COLLECTIONS.SUBMISSIONS, submissionId), { isCorrect });
+  batch.update(doc(db, COLLECTIONS.SUBMISSIONS, submissionId), {
+    isCorrect,
+    pointsEarned: isCorrect ? points : 0,
+  });
 
   if (isCorrect) {
     batch.update(doc(db, COLLECTIONS.USERS, uid), {
