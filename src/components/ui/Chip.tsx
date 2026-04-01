@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import { AppColors, Spacing, Typography } from '@/constants/theme';
 
-type ChipVariant = 'accent' | 'muted' | 'success' | 'warning';
+type ChipVariant = 'accent' | 'muted' | 'success' | 'warning' | 'danger';
 
 interface ChipProps {
   label: string;
@@ -44,6 +44,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 149, 0, 0.6)',
   },
+  danger: {
+    backgroundColor: 'rgba(255, 59, 48, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.5)',
+  },
   label: {
     ...Typography.label,
     fontWeight: '600',
@@ -59,5 +64,8 @@ const styles = StyleSheet.create({
   },
   warningLabel: {
     color: '#ff9500',
+  },
+  dangerLabel: {
+    color: '#ff3b30',
   },
 });

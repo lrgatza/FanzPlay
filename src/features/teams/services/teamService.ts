@@ -1,11 +1,13 @@
 import {
   addDoc,
   collection,
+  documentId,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   type Unsubscribe,
+  where,
   writeBatch,
   doc,
 } from 'firebase/firestore';
@@ -34,6 +36,27 @@ export async function createTeam(name: string): Promise<Team> {
 
 export function subscribeToTeams(cb: (teams: Team[]) => void): Unsubscribe {
   const q = query(collection(db, COLLECTIONS.TEAMS), orderBy('name', 'asc'));
+  return onSnapshot(q, (snap) => {
+    const teams = snap.docs.map((d) => ({
+      id: d.id,
+      ...(d.data() as Omit<Team, 'id'>),
+    }));
+    cb(teams);
+  });
+}
+
+export function subscribeToTeamsByIds(
+  teamIds: string[],
+  cb: (teams: Team[]) => void,
+): Unsubscribe {
+  if (teamIds.length === 0) {
+    cb([]);
+    return () => {};
+  }
+  const q = query(
+    collection(db, COLLECTIONS.TEAMS),
+    where(documentId(), 'in', teamIds),
+  );
   return onSnapshot(q, (snap) => {
     const teams = snap.docs.map((d) => ({
       id: d.id,

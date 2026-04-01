@@ -3,7 +3,7 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 
 import { auth, db } from '@/api/firebase';
 import { COLLECTIONS } from '@/constants/firestore';
@@ -39,4 +39,11 @@ export async function signIn(email: string, password: string): Promise<void> {
 
 export async function signOut(): Promise<void> {
   await firebaseSignOut(auth);
+}
+
+export async function updateUserTeam(
+  uid: string,
+  teamId: string,
+): Promise<void> {
+  await updateDoc(doc(db, COLLECTIONS.USERS, uid), { teamId });
 }
