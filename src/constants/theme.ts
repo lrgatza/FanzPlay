@@ -1,9 +1,41 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
 import { Platform } from 'react-native';
+
+export const AppColors = {
+  primary: '#1a2323',
+  accent: '#daec00',
+  secondary: '#ffffff',
+
+  bgPrimary: '#1a2323',
+  bgSecondary: '#ffffff',
+  bgElevated: '#111717',
+
+  textPrimary: '#ffffff',
+  textSecondary: '#e2e5e5',
+  textMuted: '#9aa2a2',
+
+  borderSubtle: '#2a3333',
+  borderStrong: '#4a5555',
+
+  accentSoft: 'rgba(218, 236, 0, 0.16)',
+};
+
+export const Spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  base: 16,
+  lg: 24,
+  xl: 32,
+} as const;
+
+export const Typography = {
+  headingXL: { fontSize: 36, fontWeight: '800' as const, lineHeight: 44 },
+  headingL: { fontSize: 28, fontWeight: '700' as const, lineHeight: 36 },
+  headingM: { fontSize: 20, fontWeight: '600' as const, lineHeight: 28 },
+  body: { fontSize: 16, fontWeight: '400' as const, lineHeight: 24 },
+  bodySmall: { fontSize: 14, fontWeight: '400' as const, lineHeight: 20 },
+  label: { fontSize: 12, fontWeight: '500' as const, lineHeight: 16 },
+} as const;
 
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
