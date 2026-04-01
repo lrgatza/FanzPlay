@@ -82,7 +82,7 @@ export function GameSelectionScreen() {
       });
     } else {
       router.push({
-        pathname: '/(fan)/lobby/[sessionId]',
+        pathname: '/(fan)/[sessionId]/lobby',
         params: { sessionId: session.id },
       });
     }

@@ -66,7 +66,7 @@ export function TeamSelectionScreen() {
     try {
       await updateUserTeam(user.uid, selectedTeamId);
       router.replace({
-        pathname: '/(fan)/lobby/[sessionId]',
+        pathname: '/(fan)/[sessionId]/lobby',
         params: { sessionId },
       });
     } catch {

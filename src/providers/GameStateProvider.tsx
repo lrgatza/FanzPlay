@@ -6,14 +6,24 @@ import React, {
   useState,
 } from 'react';
 
-import { type GameSession, type Team } from '@/types';
 import { subscribeToSession } from '@/features/game/services/gameService';
 import { subscribeToTeamsByIds } from '@/features/teams/services/teamService';
+import {
+  type CurrentQuestion,
+  type GameSession,
+  type GameStatus,
+  type Team,
+} from '@/types';
 
 export interface GameStateContextValue {
   session: GameSession | null;
   teams: Team[];
   isLoading: boolean;
+  // Derived convenience values
+  isQuestionActive: boolean;
+  currentQuestion: CurrentQuestion | null;
+  correctOptionId: string | null;
+  gameStatus: GameStatus;
 }
 
 const GameStateContext = createContext<GameStateContextValue | null>(null);
@@ -46,7 +56,15 @@ export function GameStateProvider({
   }, [session]);
 
   const value = useMemo<GameStateContextValue>(
-    () => ({ session, teams, isLoading }),
+    () => ({
+      session,
+      teams,
+      isLoading,
+      isQuestionActive: session?.questionActive ?? false,
+      currentQuestion: session?.currentQuestion ?? null,
+      correctOptionId: session?.correctOptionId ?? null,
+      gameStatus: session?.status ?? 'lobby',
+    }),
     [session, teams, isLoading],
   );
 
