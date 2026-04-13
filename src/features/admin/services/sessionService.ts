@@ -14,6 +14,7 @@ import {
 
 import { db } from '@/api/firebase';
 import { COLLECTIONS } from '@/constants/firestore';
+import { resetSessionScores } from '@/features/teams/services/teamService';
 import { type GameSession, type Question } from '@/types';
 
 export interface CreateSessionInput {
@@ -27,20 +28,23 @@ export interface CreateSessionInput {
 }
 
 export async function createSession(data: CreateSessionInput): Promise<string> {
-  const ref = await addDoc(collection(db, COLLECTIONS.GAME_SESSIONS), {
-    status: 'lobby',
-    currentQuestionId: null,
-    questionActive: false,
-    questionStartTime: null,
-    sponsorId: data.sponsorId,
-    settings: data.settings,
-    currentQuestion: null,
-    correctOptionId: null,
-    teamIds: data.teamIds,
-    questionOrder: data.questionOrder,
-    currentQuestionIndex: -1,
-    createdAt: serverTimestamp(),
-  });
+  const [ref] = await Promise.all([
+    addDoc(collection(db, COLLECTIONS.GAME_SESSIONS), {
+      status: 'lobby',
+      currentQuestionId: null,
+      questionActive: false,
+      questionStartTime: null,
+      sponsorId: data.sponsorId,
+      settings: data.settings,
+      currentQuestion: null,
+      correctOptionId: null,
+      teamIds: data.teamIds,
+      questionOrder: data.questionOrder,
+      currentQuestionIndex: -1,
+      createdAt: serverTimestamp(),
+    }),
+    resetSessionScores(data.teamIds),
+  ]);
   return ref.id;
 }
 

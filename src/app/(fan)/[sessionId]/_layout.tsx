@@ -9,6 +9,10 @@ function GameStateMachine({ sessionId }: { sessionId: string }) {
     useGameState();
 
   const prevQuestionActiveRef = useRef<boolean | null>(null);
+  // Track which correctOptionId we already navigated to waiting for so we
+  // never replace the waiting screen with itself (which would remount it and
+  // trigger double-scoring).
+  const navigatedForRevealRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -25,6 +29,8 @@ function GameStateMachine({ sessionId }: { sessionId: string }) {
     }
 
     if (isQuestionActive) {
+      // New question started — reset the reveal-navigation guard.
+      navigatedForRevealRef.current = null;
       router.replace({
         pathname: '/(fan)/[sessionId]/question',
         params: { sessionId },
@@ -32,7 +38,13 @@ function GameStateMachine({ sessionId }: { sessionId: string }) {
       return;
     }
 
-    if (prev === true && !isQuestionActive && correctOptionId !== null) {
+    if (
+      prev === true &&
+      !isQuestionActive &&
+      correctOptionId !== null &&
+      navigatedForRevealRef.current !== correctOptionId
+    ) {
+      navigatedForRevealRef.current = correctOptionId;
       router.replace({
         pathname: '/(fan)/[sessionId]/waiting',
         params: { sessionId },

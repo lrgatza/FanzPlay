@@ -30,36 +30,49 @@ export function WaitingScreen() {
       !lockedQuestionIdRef.current ||
       scoreScoredRef.current ||
       !user?.uid ||
-      !user?.teamId
+      !user?.teamId ||
+      !currentQuestion
     ) {
       return;
     }
 
+    // Lock immediately (synchronously) so re-renders caused by dependency
+    // changes cannot start a second scoring pass while getDoc is in-flight.
+    scoreScoredRef.current = true;
+
     const questionId = lockedQuestionIdRef.current;
     const submissionId = `${sessionId}_${questionId}_${user.uid}`;
+    const { uid, teamId } = user;
+    const { points } = currentQuestion;
+    const revealedOptionId = correctOptionId;
 
-    getDoc(doc(db, COLLECTIONS.SUBMISSIONS, submissionId)).then((snap) => {
-      if (!snap.exists()) return;
-      const data = snap.data();
-      const selected = data.selectedOptionId as string;
-
-      const correct = selected === correctOptionId;
-      setIsCorrect(correct);
-
-      if (data.isCorrect === null && currentQuestion) {
-        scoreScoredRef.current = true;
-        computeAndRecordScore(
-          submissionId,
-          selected,
-          correctOptionId,
-          currentQuestion.points,
-          user.uid,
-          user.teamId!,
-        ).catch(() => {
+    getDoc(doc(db, COLLECTIONS.SUBMISSIONS, submissionId))
+      .then((snap) => {
+        if (!snap.exists()) {
           scoreScoredRef.current = false;
-        });
-      }
-    });
+          return;
+        }
+        const data = snap.data();
+        const selected = data.selectedOptionId as string;
+
+        setIsCorrect(selected === revealedOptionId);
+
+        if (data.isCorrect === null) {
+          computeAndRecordScore(
+            submissionId,
+            selected,
+            revealedOptionId,
+            points,
+            uid,
+            teamId!,
+          ).catch(() => {
+            scoreScoredRef.current = false;
+          });
+        }
+      })
+      .catch(() => {
+        scoreScoredRef.current = false;
+      });
   }, [correctOptionId, user, sessionId, currentQuestion]);
 
   const sortedTeams: Team[] = [...teams].sort(
