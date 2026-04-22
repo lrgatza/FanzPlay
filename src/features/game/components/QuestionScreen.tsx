@@ -103,7 +103,13 @@ export function QuestionScreen() {
   }, [isQuestionActive, submitted, router, sessionId]);
 
   async function handleSelectOption(optionId: string) {
-    if (submitted || isSubmitting || !user || !session?.currentQuestionId)
+    if (
+      submitted ||
+      isSubmitting ||
+      !user ||
+      !session?.currentQuestionId ||
+      !user.teamId
+    )
       return;
     setSelectedOptionId(optionId);
     setIsSubmitting(true);
@@ -114,7 +120,7 @@ export function QuestionScreen() {
         sessionId,
         session.currentQuestionId,
         user.uid,
-        user.teamId ?? '',
+        user.teamId,
         optionId,
       );
       setSubmitted(true);

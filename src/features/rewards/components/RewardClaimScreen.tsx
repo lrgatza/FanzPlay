@@ -1,15 +1,19 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { doc, getDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { TextField } from '@/components/ui/TextField';
 import { AppColors, Spacing, Typography } from '@/constants/theme';
+import { db } from '@/api/firebase';
+import { COLLECTIONS } from '@/constants/firestore';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useRewardClaim } from '@/features/rewards/hooks/useRewardClaim';
 import { useGameState } from '@/providers/GameStateProvider';
+import { type Sponsor } from '@/types';
 
 export function RewardClaimScreen() {
   const router = useRouter();
@@ -22,6 +26,49 @@ export function RewardClaimScreen() {
   const [email, setEmail] = useState(user?.email ?? '');
   const [phone, setPhone] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(
+    null,
+  );
+  const [sponsorError, setSponsorError] = useState('');
+  const [isLoadingSponsors, setIsLoadingSponsors] = useState(true);
+
+  useEffect(() => {
+    const sponsorIds =
+      session?.sponsorIds && session.sponsorIds.length > 0
+        ? session.sponsorIds
+        : session?.sponsorId
+          ? [session.sponsorId]
+          : [];
+
+    if (sponsorIds.length === 0) {
+      setSponsors([]);
+      setSelectedSponsorId(null);
+      setIsLoadingSponsors(false);
+      return;
+    }
+
+    setIsLoadingSponsors(true);
+    Promise.all(
+      sponsorIds.map(async (sponsorId) => {
+        const snap = await getDoc(doc(db, COLLECTIONS.SPONSORS, sponsorId));
+        if (!snap.exists()) return null;
+        return { id: snap.id, ...(snap.data() as Omit<Sponsor, 'id'>) };
+      }),
+    )
+      .then((loadedSponsors) => {
+        const nextSponsors = loadedSponsors.filter(
+          (s): s is Sponsor => s !== null,
+        );
+        setSponsors(nextSponsors);
+        setSelectedSponsorId((prev) =>
+          prev && nextSponsors.some((sponsor) => sponsor.id === prev)
+            ? prev
+            : nextSponsors[0]?.id ?? null,
+        );
+      })
+      .finally(() => setIsLoadingSponsors(false));
+  }, [session?.sponsorId, session?.sponsorIds]);
 
   function validateEmail(value: string): boolean {
     const trimmed = value.trim();
@@ -39,12 +86,17 @@ export function RewardClaimScreen() {
 
   async function handleSubmit() {
     if (!validateEmail(email)) return;
-    if (!user?.uid || !session?.sponsorId) return;
+    if (!selectedSponsorId) {
+      setSponsorError('Please select a reward first.');
+      return;
+    }
+    if (!user?.uid) return;
 
+    setSponsorError('');
     await submit(
       user.uid,
       sessionId,
-      session.sponsorId,
+      selectedSponsorId,
       email,
       phone.trim() || null,
     );
@@ -83,10 +135,50 @@ export function RewardClaimScreen() {
 
       <Text style={styles.title}>Claim Your Reward</Text>
       <Text style={styles.subtitle}>
-        Confirm your contact details so the sponsor can reach you.
+        Choose your reward, then confirm your contact details.
       </Text>
 
       <Card style={styles.formCard}>
+        <Text style={styles.sectionLabel}>Choose a Sponsor Reward</Text>
+        {isLoadingSponsors ? (
+          <ActivityIndicator color={AppColors.accent} style={styles.spinner} />
+        ) : sponsors.length === 0 ? (
+          <Text style={styles.emptySponsors}>
+            No sponsor rewards are configured for this session.
+          </Text>
+        ) : (
+          sponsors.map((sponsor) => {
+            const selected = selectedSponsorId === sponsor.id;
+            return (
+              <Pressable
+                key={sponsor.id}
+                onPress={() => {
+                  setSelectedSponsorId(sponsor.id);
+                  if (sponsorError) setSponsorError('');
+                }}
+                style={({ pressed }) => [pressed && styles.pressed]}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected }}
+              >
+                <Card
+                  style={[
+                    styles.sponsorOptionCard,
+                    selected ? styles.sponsorOptionSelected : null,
+                  ]}
+                >
+                  <Text style={styles.sponsorName}>{sponsor.name}</Text>
+                  {!!sponsor.rewardDescription && (
+                    <Text style={styles.sponsorRewardText}>
+                      {sponsor.rewardDescription}
+                    </Text>
+                  )}
+                </Card>
+              </Pressable>
+            );
+          })
+        )}
+        {sponsorError ? <Text style={styles.errorText}>{sponsorError}</Text> : null}
+
         <TextField
           label="Email Address"
           value={email}
@@ -147,6 +239,43 @@ const styles = StyleSheet.create({
   formCard: {
     backgroundColor: AppColors.bgElevated,
     gap: Spacing.base,
+  },
+  sectionLabel: {
+    ...Typography.label,
+    color: AppColors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  spinner: {
+    marginVertical: Spacing.xs,
+  },
+  emptySponsors: {
+    ...Typography.bodySmall,
+    color: AppColors.textMuted,
+    fontStyle: 'italic',
+  },
+  sponsorOptionCard: {
+    backgroundColor: AppColors.bgPrimary,
+    borderColor: AppColors.borderSubtle,
+    marginBottom: Spacing.xs,
+    gap: Spacing.xs,
+  },
+  sponsorOptionSelected: {
+    borderColor: AppColors.accent,
+    borderWidth: 2,
+    backgroundColor: AppColors.accentSoft,
+  },
+  pressed: {
+    opacity: 0.8,
+  },
+  sponsorName: {
+    ...Typography.body,
+    color: AppColors.textPrimary,
+    fontWeight: '600',
+  },
+  sponsorRewardText: {
+    ...Typography.bodySmall,
+    color: AppColors.textSecondary,
   },
   privacyNote: {
     ...Typography.bodySmall,

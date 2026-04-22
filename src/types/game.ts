@@ -10,7 +10,8 @@ export interface GameSession {
   currentQuestionId: string | null;
   questionActive: boolean;
   questionStartTime: Timestamp | null;
-  sponsorId: string;
+  sponsorIds: string[];
+  sponsorId?: string;
   settings: {
     showTeamScores: boolean;
     allowLateJoin: boolean;

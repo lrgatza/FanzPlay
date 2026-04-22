@@ -39,10 +39,8 @@ export function SessionSetupScreen() {
   // Question selection (ordered list)
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
 
-  // Sponsor selection (one)
-  const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(
-    null,
-  );
+  // Sponsor selection (one or more)
+  const [selectedSponsorIds, setSelectedSponsorIds] = useState<string[]>([]);
   const [showNewSponsor, setShowNewSponsor] = useState(false);
   const [newSponsorName, setNewSponsorName] = useState('');
   const [newSponsorReward, setNewSponsorReward] = useState('');
@@ -96,6 +94,12 @@ export function SessionSetupScreen() {
   }
 
   // ── Sponsor helpers ──
+  function toggleSponsor(id: string) {
+    setSelectedSponsorIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
+  }
+
   async function handleAddSponsor() {
     if (!newSponsorName.trim()) {
       setNewSponsorError('Sponsor name is required.');
@@ -108,7 +112,9 @@ export function SessionSetupScreen() {
         newSponsorName.trim(),
         newSponsorReward.trim(),
       );
-      setSelectedSponsorId(created.id);
+      setSelectedSponsorIds((prev) =>
+        prev.includes(created.id) ? prev : [...prev, created.id],
+      );
       setNewSponsorName('');
       setNewSponsorReward('');
       setShowNewSponsor(false);
@@ -123,7 +129,7 @@ export function SessionSetupScreen() {
   function validate(): string | null {
     if (selectedTeamIds.length !== 2) return 'Select exactly 2 teams.';
     if (selectedQuestionIds.length === 0) return 'Select at least 1 question.';
-    if (!selectedSponsorId) return 'Select a sponsor.';
+    if (selectedSponsorIds.length === 0) return 'Select at least 1 sponsor.';
     return null;
   }
 
@@ -139,7 +145,7 @@ export function SessionSetupScreen() {
       await createSession({
         teamIds: selectedTeamIds,
         questionOrder: selectedQuestionIds,
-        sponsorId: selectedSponsorId!,
+        sponsorIds: selectedSponsorIds,
         settings: { showTeamScores, allowLateJoin },
       });
       router.replace('/(admin)/dashboard');
@@ -164,7 +170,7 @@ export function SessionSetupScreen() {
         </Pressable>
         <Text style={styles.title}>New Session</Text>
         <Text style={styles.subtitle}>
-          Configure teams, questions, sponsor, and settings.
+          Configure teams, questions, sponsors, and settings.
         </Text>
       </View>
 
@@ -316,21 +322,24 @@ export function SessionSetupScreen() {
         )}
       </View>
 
-      {/* ── Section 3: Sponsor ── */}
+      {/* ── Section 3: Sponsors ── */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Select Sponsor</Text>
+        <Text style={styles.sectionTitle}>Select Sponsors</Text>
+        <Text style={styles.sectionHint}>
+          Winners can choose from these rewards at the end.
+        </Text>
 
         {sponsorsLoading ? (
           <ActivityIndicator color={AppColors.accent} style={styles.spinner} />
         ) : (
           sponsors.map((sponsor: Sponsor) => {
-            const selected = selectedSponsorId === sponsor.id;
+            const selected = selectedSponsorIds.includes(sponsor.id);
             return (
               <Pressable
                 key={sponsor.id}
-                onPress={() => setSelectedSponsorId(sponsor.id)}
+                onPress={() => toggleSponsor(sponsor.id)}
                 style={({ pressed }) => (pressed ? styles.pressed : undefined)}
-                accessibilityRole="radio"
+                accessibilityRole="checkbox"
                 accessibilityState={{ checked: selected }}
               >
                 <Card
