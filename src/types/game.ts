@@ -6,6 +6,7 @@ export type GameStatus = 'lobby' | 'active' | 'completed';
 
 export interface GameSession {
   id: string;
+  title?: string;
   status: GameStatus;
   currentQuestionId: string | null;
   questionActive: boolean;

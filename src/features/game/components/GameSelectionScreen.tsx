@@ -28,7 +28,9 @@ function SessionCard({
     >
       <View style={styles.sessionCardRow}>
         <View style={styles.sessionCardInfo}>
-          <Text style={styles.sessionTitle}>Game Session</Text>
+          <Text style={styles.sessionTitle}>
+            {session.title?.trim() || 'Game Session'}
+          </Text>
           <Text style={styles.sessionMeta}>
             {session.teamIds?.length ?? 0} teams •{' '}
             {session.questionOrder?.length ?? 0} questions
