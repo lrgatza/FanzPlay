@@ -192,7 +192,22 @@ export async function closeQuestion(
   await batch.commit();
 }
 
-export async function endSession(sessionId: string): Promise<void> {
+export async function endSession(
+  sessionId: string,
+  options?: { scoreActiveQuestion?: boolean },
+): Promise<void> {
+  if (options?.scoreActiveQuestion) {
+    const sessionRef = doc(db, COLLECTIONS.GAME_SESSIONS, sessionId);
+    const sessionSnap = await getDoc(sessionRef);
+    if (!sessionSnap.exists()) {
+      throw new Error(`Session ${sessionId} not found.`);
+    }
+    const sessionData = sessionSnap.data() as Omit<GameSession, 'id'>;
+    if (sessionData.questionActive && sessionData.currentQuestionId) {
+      await closeQuestion(sessionId, sessionData.currentQuestionId);
+    }
+  }
+
   await updateDoc(doc(db, COLLECTIONS.GAME_SESSIONS, sessionId), {
     status: 'completed',
     questionActive: false,
