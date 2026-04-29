@@ -11,6 +11,7 @@ import { AppColors, Spacing, Typography } from '@/constants/theme';
 import { COLLECTIONS } from '@/constants/firestore';
 import { db } from '@/api/firebase';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { getSessionParticipant } from '@/features/game/services/sessionParticipantService';
 import { useGameState } from '@/providers/GameStateProvider';
 import { type Sponsor, type Team } from '@/types';
 
@@ -68,6 +69,7 @@ export function LobbyScreen() {
   const { user } = useAuth();
   const { session, teams, isLoading } = useGameState();
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [sessionTeamId, setSessionTeamId] = useState<string | null>(null);
 
   useEffect(() => {
     const sponsorIds =
@@ -91,6 +93,20 @@ export function LobbyScreen() {
       setSponsors(loadedSponsors.filter((s): s is Sponsor => s !== null));
     });
   }, [session?.sponsorId, session?.sponsorIds]);
+
+  useEffect(() => {
+    if (!session?.id || !user?.uid) {
+      setSessionTeamId(null);
+      return;
+    }
+    getSessionParticipant(session.id, user.uid)
+      .then((participant) => {
+        setSessionTeamId(participant?.teamId ?? user.teamId ?? null);
+      })
+      .catch(() => {
+        setSessionTeamId(user.teamId ?? null);
+      });
+  }, [session?.id, user?.uid, user?.teamId]);
 
   const sortedTeams = [...teams].sort(
     (a, b) => b.currentSessionScore - a.currentSessionScore,
@@ -127,6 +143,18 @@ export function LobbyScreen() {
         />
       </View>
 
+      <Button
+        label="Change Team"
+        variant="secondary"
+        onPress={() =>
+          router.push({
+            pathname: '/(fan)/team-selection',
+            params: { sessionId: session.id },
+          })
+        }
+        style={styles.changeTeamBtn}
+      />
+
       {sponsors.map((sponsor) => (
         <SponsorCard key={sponsor.id} sponsor={sponsor} />
       ))}
@@ -140,7 +168,7 @@ export function LobbyScreen() {
                 <TeamScoreRow
                   team={team}
                   rank={index + 1}
-                  isUserTeam={team.id === user?.teamId}
+                  isUserTeam={team.id === sessionTeamId}
                 />
                 {index < sortedTeams.length - 1 && (
                   <View style={styles.divider} />
@@ -197,6 +225,9 @@ const styles = StyleSheet.create({
     backgroundColor: AppColors.bgElevated,
     marginBottom: Spacing.lg,
     gap: Spacing.xs,
+  },
+  changeTeamBtn: {
+    marginBottom: Spacing.base,
   },
   sponsorLabel: {
     ...Typography.label,

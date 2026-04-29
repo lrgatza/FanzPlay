@@ -31,6 +31,7 @@ export interface AuthContextValue {
   ) => Promise<void>;
   signOut: () => Promise<void>;
   setUserTeam: (teamId: string | null) => void;
+  setUserMarketingOptIn: (marketingOptIn: boolean) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -94,6 +95,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser((prev) => (prev ? { ...prev, teamId } : prev));
   }, []);
 
+  const setUserMarketingOptIn = useCallback((marketingOptIn: boolean) => {
+    setUser((prev) => (prev ? { ...prev, marketingOptIn } : prev));
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -103,8 +108,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp,
       signOut,
       setUserTeam,
+      setUserMarketingOptIn,
     }),
-    [user, firebaseUser, isLoading, signIn, signUp, signOut, setUserTeam],
+    [
+      user,
+      firebaseUser,
+      isLoading,
+      signIn,
+      signUp,
+      signOut,
+      setUserTeam,
+      setUserMarketingOptIn,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

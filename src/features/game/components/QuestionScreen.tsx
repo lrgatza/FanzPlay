@@ -11,6 +11,7 @@ import {
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { AppColors, Spacing, Typography } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { resolveSessionTeamForAnswer } from '@/features/game/services/sessionParticipantService';
 import { useCountdown } from '@/features/game/hooks/useCountdown';
 import { submitAnswer } from '@/features/game/services/submissionService';
 import { useGameState } from '@/providers/GameStateProvider';
@@ -107,8 +108,7 @@ export function QuestionScreen() {
       submitted ||
       isSubmitting ||
       !user ||
-      !session?.currentQuestionId ||
-      !user.teamId
+      !session?.currentQuestionId
     )
       return;
     setSelectedOptionId(optionId);
@@ -116,11 +116,16 @@ export function QuestionScreen() {
     setError(null);
 
     try {
+      const teamId = await resolveSessionTeamForAnswer(
+        sessionId,
+        user.uid,
+        user.teamId,
+      );
       await submitAnswer(
         sessionId,
         session.currentQuestionId,
         user.uid,
-        user.teamId,
+        teamId,
         optionId,
       );
       setSubmitted(true);
@@ -128,8 +133,12 @@ export function QuestionScreen() {
         pathname: '/(fan)/[sessionId]/waiting',
         params: { sessionId },
       });
-    } catch {
-      setError('Failed to submit answer. Please try again.');
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : 'Failed to submit answer. Please try again.',
+      );
       setSelectedOptionId(null);
       setIsSubmitting(false);
     }
