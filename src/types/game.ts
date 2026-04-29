@@ -22,5 +22,6 @@ export interface GameSession {
   teamIds: string[];
   questionOrder: string[];
   currentQuestionIndex: number;
+  scoredQuestionIds?: string[];
   createdAt: Timestamp;
 }

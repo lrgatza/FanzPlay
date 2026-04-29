@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -45,6 +46,7 @@ export function LiveControlScreen() {
   const [isEnding, setIsEnding] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [showEndSessionModal, setShowEndSessionModal] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -89,23 +91,54 @@ export function LiveControlScreen() {
     }
   }
 
+  async function finalizeEndSession(scoreActiveQuestion: boolean) {
+    setIsEnding(true);
+    setActionError(null);
+    setShowEndSessionModal(false);
+    try {
+      await endSession(sessionId, { scoreActiveQuestion });
+      router.replace('/(admin)/dashboard');
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Failed to end session.');
+      setIsEnding(false);
+    }
+  }
+
   function handleEndSession() {
-    confirmAction(
-      'End this session? Fans will see the results screen.',
-      async () => {
-        setIsEnding(true);
-        setActionError(null);
-        try {
-          await endSession(sessionId);
-          router.replace('/(admin)/dashboard');
-        } catch (e) {
-          setActionError(
-            e instanceof Error ? e.message : 'Failed to end session.',
-          );
-          setIsEnding(false);
-        }
-      },
-    );
+
+    const hasActiveQuestion = session?.questionActive ?? false;
+    if (hasActiveQuestion) {
+      if (Platform.OS === 'web') {
+        setShowEndSessionModal(true);
+        return;
+      }
+
+      Alert.alert(
+        'End session',
+        'A question is currently active. Choose how to end this session.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'End Without Scoring',
+            style: 'destructive',
+            onPress: () => {
+              void finalizeEndSession(false);
+            },
+          },
+          {
+            text: 'Score & End',
+            onPress: () => {
+              void finalizeEndSession(true);
+            },
+          },
+        ],
+      );
+      return;
+    }
+
+    confirmAction('End this session? Fans will see the results screen.', () => {
+      void finalizeEndSession(false);
+    });
   }
 
   async function handleExportCsv() {
@@ -263,6 +296,42 @@ export function LiveControlScreen() {
           ) : null}
         </View>
       )}
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={showEndSessionModal}
+        onRequestClose={() => setShowEndSessionModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Card style={styles.modalCard}>
+            <Text style={styles.modalTitle}>End session</Text>
+            <Text style={styles.modalBody}>
+              A question is currently active. Choose how to end this session.
+            </Text>
+            <View style={styles.modalActions}>
+              <Button
+                label="Score & End"
+                onPress={() => {
+                  void finalizeEndSession(true);
+                }}
+              />
+              <Button
+                label="End Without Scoring"
+                variant="secondary"
+                onPress={() => {
+                  void finalizeEndSession(false);
+                }}
+              />
+              <Button
+                label="Cancel"
+                variant="ghost"
+                onPress={() => setShowEndSessionModal(false)}
+              />
+            </View>
+          </Card>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -369,5 +438,29 @@ const styles = StyleSheet.create({
     color: '#ff6b6b',
     textAlign: 'center',
     marginTop: Spacing.xs,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'center',
+    padding: Spacing.base,
+  },
+  modalCard: {
+    backgroundColor: AppColors.bgElevated,
+    gap: Spacing.sm,
+  },
+  modalTitle: {
+    ...Typography.headingM,
+    color: AppColors.textPrimary,
+    textAlign: 'center',
+  },
+  modalBody: {
+    ...Typography.body,
+    color: AppColors.textSecondary,
+    textAlign: 'center',
+  },
+  modalActions: {
+    marginTop: Spacing.xs,
+    gap: Spacing.sm,
   },
 });

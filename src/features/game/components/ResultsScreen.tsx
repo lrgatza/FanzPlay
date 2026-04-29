@@ -95,7 +95,12 @@ export function ResultsScreen() {
   const sortedTeams = [...teams].sort(
     (a, b) => b.currentSessionScore - a.currentSessionScore,
   );
-  const winningTeam = sortedTeams[0] ?? null;
+  const topScore = sortedTeams[0]?.currentSessionScore ?? 0;
+  const hasScoredQuestions = (session?.scoredQuestionIds?.length ?? 0) > 0;
+  const teamsAtTop = sortedTeams.filter((team) => team.currentSessionScore === topScore);
+  const isTieForFirst = hasScoredQuestions && topScore > 0 && teamsAtTop.length > 1;
+  const winningTeam =
+    hasScoredQuestions && topScore > 0 && !isTieForFirst ? sortedTeams[0] : null;
   const sponsorCount =
     session?.sponsorIds && session.sponsorIds.length > 0
       ? session.sponsorIds.length
@@ -144,7 +149,11 @@ export function ResultsScreen() {
         <WinnerCard team={winningTeam} />
       ) : (
         <Card style={styles.noResultsCard}>
-          <Text style={styles.noResultsText}>No scores recorded.</Text>
+          <Text style={styles.noResultsText}>
+            {isTieForFirst
+              ? 'Game ended in a tie for first place.'
+              : 'No scored results were finalized.'}
+          </Text>
         </Card>
       )}
 
