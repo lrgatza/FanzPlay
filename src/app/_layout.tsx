@@ -3,7 +3,7 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from '@react-navigation/native';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import 'react-native-reanimated';
@@ -15,17 +15,25 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 function RoleGatekeeper({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const segments = useSegments();
+  const topSegment = segments[0];
 
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      router.replace('/(auth)/login');
+      if (topSegment !== '(auth)') {
+        router.replace('/(auth)/login');
+      }
     } else if (user.role === 'admin') {
-      router.replace('/(admin)/dashboard');
+      if (topSegment !== '(admin)') {
+        router.replace('/(admin)/dashboard');
+      }
     } else {
-      router.replace('/(fan)/game-selection');
+      if (topSegment !== '(fan)') {
+        router.replace('/(fan)/game-selection');
+      }
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, topSegment]);
 
   return <>{children}</>;
 }

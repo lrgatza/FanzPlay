@@ -18,6 +18,7 @@ import { resetSessionScores } from '@/features/teams/services/teamService';
 import { type GameSession, type Question } from '@/types';
 
 export interface CreateSessionInput {
+  title: string;
   teamIds: string[];
   questionOrder: string[];
   sponsorIds: string[];
@@ -30,6 +31,7 @@ export interface CreateSessionInput {
 export async function createSession(data: CreateSessionInput): Promise<string> {
   const [ref] = await Promise.all([
     addDoc(collection(db, COLLECTIONS.GAME_SESSIONS), {
+      title: data.title,
       status: 'lobby',
       currentQuestionId: null,
       questionActive: false,

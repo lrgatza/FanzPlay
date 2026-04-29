@@ -28,6 +28,7 @@ export function SessionSetupScreen() {
   const { teams, isLoading: teamsLoading } = useTeams();
   const { sponsors, isLoading: sponsorsLoading } = useSponsors();
   const { questions, isLoading: questionsLoading } = useQuestions();
+  const [sessionTitle, setSessionTitle] = useState('Game Session');
 
   // Team selection (exactly 2)
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
@@ -127,6 +128,7 @@ export function SessionSetupScreen() {
 
   // ── Submit ──
   function validate(): string | null {
+    if (!sessionTitle.trim()) return 'Session title is required.';
     if (selectedTeamIds.length !== 2) return 'Select exactly 2 teams.';
     if (selectedQuestionIds.length === 0) return 'Select at least 1 question.';
     if (selectedSponsorIds.length === 0) return 'Select at least 1 sponsor.';
@@ -143,6 +145,7 @@ export function SessionSetupScreen() {
     setSubmitError('');
     try {
       await createSession({
+        title: sessionTitle.trim(),
         teamIds: selectedTeamIds,
         questionOrder: selectedQuestionIds,
         sponsorIds: selectedSponsorIds,
@@ -172,6 +175,17 @@ export function SessionSetupScreen() {
         <Text style={styles.subtitle}>
           Configure teams, questions, sponsors, and settings.
         </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Session Details</Text>
+        <TextField
+          label="Game Title"
+          value={sessionTitle}
+          onChangeText={setSessionTitle}
+          placeholder="e.g. Knicks Halftime Trivia"
+          maxLength={60}
+        />
       </View>
 
       {/* ── Section 1: Teams ── */}

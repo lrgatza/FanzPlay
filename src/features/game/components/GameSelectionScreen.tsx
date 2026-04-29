@@ -28,7 +28,9 @@ function SessionCard({
     >
       <View style={styles.sessionCardRow}>
         <View style={styles.sessionCardInfo}>
-          <Text style={styles.sessionTitle}>Game Session</Text>
+          <Text style={styles.sessionTitle}>
+            {session.title?.trim() || 'Game Session'}
+          </Text>
           <Text style={styles.sessionMeta}>
             {session.teamIds?.length ?? 0} teams •{' '}
             {session.questionOrder?.length ?? 0} questions
@@ -92,12 +94,20 @@ export function GameSelectionScreen() {
             Welcome, {user?.displayName ?? 'Fan'}
           </Text>
         </View>
-        <Button
-          label="Sign Out"
-          variant="ghost"
-          fullWidth={false}
-          onPress={handleSignOut}
-        />
+        <View style={styles.headerActions}>
+          <Button
+            label="Settings"
+            variant="ghost"
+            fullWidth={false}
+            onPress={() => router.push('/(fan)/settings')}
+          />
+          <Button
+            label="Sign Out"
+            variant="ghost"
+            fullWidth={false}
+            onPress={handleSignOut}
+          />
+        </View>
       </View>
 
       {isLoading ? (
@@ -139,6 +149,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   headerText: {
+    gap: Spacing.xs,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.xs,
   },
   title: {

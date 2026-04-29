@@ -8,6 +8,7 @@ export default function FanLayout() {
     <ErrorBoundary>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="game-selection" />
+        <Stack.Screen name="settings" />
         <Stack.Screen name="team-selection" />
         <Stack.Screen name="[sessionId]" />
       </Stack>

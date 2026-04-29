@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -14,6 +14,11 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { AppColors, Spacing, Typography } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { updateUserTeam } from '@/features/auth/services/authService';
+import {
+  canChangeSessionTeam,
+  getSessionParticipant,
+  upsertSessionTeamStrict,
+} from '@/features/game/services/sessionParticipantService';
 import { useTeams } from '@/features/teams/hooks/useTeams';
 import { type Team } from '@/types';
 
@@ -56,14 +61,37 @@ export function TeamSelectionScreen() {
   const { user, setUserTeam } = useAuth();
   const { teams, isLoading } = useTeams();
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [isCheckingLock, setIsCheckingLock] = useState(true);
+  const [isLocked, setIsLocked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!user) return;
+    setIsCheckingLock(true);
+    setError(null);
+    Promise.all([
+      getSessionParticipant(sessionId, user.uid),
+      canChangeSessionTeam(sessionId, user.uid),
+    ])
+      .then(([participant, canChange]) => {
+        setSelectedTeamId(participant?.teamId ?? user.teamId ?? null);
+        setIsLocked(!canChange);
+      })
+      .catch(() => {
+        setError('Failed to load your team selection. Please try again.');
+      })
+      .finally(() => {
+        setIsCheckingLock(false);
+      });
+  }, [sessionId, user]);
+
   async function handleConfirm() {
-    if (!selectedTeamId || !user) return;
+    if (!selectedTeamId || !user || isLocked) return;
     setIsSaving(true);
     setError(null);
     try {
+      await upsertSessionTeamStrict(sessionId, user.uid, selectedTeamId);
       await updateUserTeam(user.uid, selectedTeamId);
       setUserTeam(selectedTeamId);
       router.replace({
@@ -90,11 +118,12 @@ export function TeamSelectionScreen() {
         </Pressable>
         <Text style={styles.title}>Pick Your Team</Text>
         <Text style={styles.subtitle}>
-          Choose the team you want to cheer for. You can change this later.
+          Choose your team for this session. Team changes lock after your first
+          answer.
         </Text>
       </View>
 
-      {isLoading ? (
+      {isLoading || isCheckingLock ? (
         <View style={styles.center}>
           <ActivityIndicator color={AppColors.accent} size="large" />
         </View>
@@ -119,9 +148,9 @@ export function TeamSelectionScreen() {
 
       <View style={styles.footer}>
         <Button
-          label="Join Game"
+          label={isLocked ? 'Team Locked' : 'Save Team'}
           onPress={handleConfirm}
-          disabled={!selectedTeamId}
+          disabled={!selectedTeamId || isLocked}
           loading={isSaving}
         />
       </View>

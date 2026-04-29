@@ -47,3 +47,10 @@ export async function updateUserTeam(
 ): Promise<void> {
   await updateDoc(doc(db, COLLECTIONS.USERS, uid), { teamId });
 }
+
+export async function updateUserMarketingOptIn(
+  uid: string,
+  marketingOptIn: boolean,
+): Promise<void> {
+  await updateDoc(doc(db, COLLECTIONS.USERS, uid), { marketingOptIn });
+}
