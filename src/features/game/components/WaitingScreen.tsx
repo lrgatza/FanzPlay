@@ -1,4 +1,4 @@
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -9,7 +9,6 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { COLLECTIONS } from '@/constants/firestore';
 import { AppColors, Spacing, Typography } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { computeAndRecordScore } from '@/features/game/services/submissionService';
 import { useGameState } from '@/providers/GameStateProvider';
 import { type Team } from '@/types';
 
@@ -21,58 +20,30 @@ export function WaitingScreen() {
   const lockedQuestionIdRef = useRef<string | null>(
     session?.currentQuestionId ?? null,
   );
-  const scoreScoredRef = useRef(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (
       !correctOptionId ||
       !lockedQuestionIdRef.current ||
-      scoreScoredRef.current ||
       !user?.uid ||
       !currentQuestion
     ) {
       return;
     }
 
-    // Lock immediately (synchronously) so re-renders caused by dependency
-    // changes cannot start a second scoring pass while getDoc is in-flight.
-    scoreScoredRef.current = true;
-
     const questionId = lockedQuestionIdRef.current;
     const submissionId = `${sessionId}_${questionId}_${user.uid}`;
-    const { uid } = user;
-    const { points } = currentQuestion;
-    const revealedOptionId = correctOptionId;
+    const submissionRef = doc(db, COLLECTIONS.SUBMISSIONS, submissionId);
+    const unsubscribe = onSnapshot(submissionRef, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data() as { isCorrect?: boolean | null };
+      if (typeof data.isCorrect === 'boolean') {
+        setIsCorrect(data.isCorrect);
+      }
+    });
 
-    getDoc(doc(db, COLLECTIONS.SUBMISSIONS, submissionId))
-      .then((snap) => {
-        if (!snap.exists()) {
-          scoreScoredRef.current = false;
-          return;
-        }
-        const data = snap.data();
-        const selected = data.selectedOptionId as string;
-        const submissionTeamId = data.teamId as string | undefined;
-
-        setIsCorrect(selected === revealedOptionId);
-
-        if (data.isCorrect === null && submissionTeamId) {
-          computeAndRecordScore(
-            submissionId,
-            selected,
-            revealedOptionId,
-            points,
-            uid,
-            submissionTeamId,
-          ).catch(() => {
-            scoreScoredRef.current = false;
-          });
-        }
-      })
-      .catch(() => {
-        scoreScoredRef.current = false;
-      });
+    return unsubscribe;
   }, [correctOptionId, user, sessionId, currentQuestion]);
 
   const sortedTeams: Team[] = [...teams].sort(
