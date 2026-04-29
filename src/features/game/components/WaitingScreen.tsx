@@ -30,7 +30,6 @@ export function WaitingScreen() {
       !lockedQuestionIdRef.current ||
       scoreScoredRef.current ||
       !user?.uid ||
-      !user?.teamId ||
       !currentQuestion
     ) {
       return;
@@ -42,7 +41,7 @@ export function WaitingScreen() {
 
     const questionId = lockedQuestionIdRef.current;
     const submissionId = `${sessionId}_${questionId}_${user.uid}`;
-    const { uid, teamId } = user;
+    const { uid } = user;
     const { points } = currentQuestion;
     const revealedOptionId = correctOptionId;
 
@@ -54,17 +53,18 @@ export function WaitingScreen() {
         }
         const data = snap.data();
         const selected = data.selectedOptionId as string;
+        const submissionTeamId = data.teamId as string | undefined;
 
         setIsCorrect(selected === revealedOptionId);
 
-        if (data.isCorrect === null) {
+        if (data.isCorrect === null && submissionTeamId) {
           computeAndRecordScore(
             submissionId,
             selected,
             revealedOptionId,
             points,
             uid,
-            teamId!,
+            submissionTeamId,
           ).catch(() => {
             scoreScoredRef.current = false;
           });

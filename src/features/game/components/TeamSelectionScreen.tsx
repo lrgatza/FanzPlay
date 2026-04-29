@@ -53,7 +53,7 @@ function TeamRow({
 export function TeamSelectionScreen() {
   const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
-  const { user } = useAuth();
+  const { user, setUserTeam } = useAuth();
   const { teams, isLoading } = useTeams();
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -65,6 +65,7 @@ export function TeamSelectionScreen() {
     setError(null);
     try {
       await updateUserTeam(user.uid, selectedTeamId);
+      setUserTeam(selectedTeamId);
       router.replace({
         pathname: '/(fan)/[sessionId]/lobby',
         params: { sessionId },

@@ -67,16 +67,30 @@ export function LobbyScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { session, teams, isLoading } = useGameState();
-  const [sponsor, setSponsor] = useState<Sponsor | null>(null);
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
 
   useEffect(() => {
-    if (!session?.sponsorId) return;
-    getDoc(doc(db, COLLECTIONS.SPONSORS, session.sponsorId)).then((snap) => {
-      if (snap.exists()) {
-        setSponsor({ id: snap.id, ...(snap.data() as Omit<Sponsor, 'id'>) });
-      }
+    const sponsorIds =
+      session?.sponsorIds && session.sponsorIds.length > 0
+        ? session.sponsorIds
+        : session?.sponsorId
+          ? [session.sponsorId]
+          : [];
+    if (sponsorIds.length === 0) {
+      setSponsors([]);
+      return;
+    }
+
+    Promise.all(
+      sponsorIds.map(async (sponsorId) => {
+        const snap = await getDoc(doc(db, COLLECTIONS.SPONSORS, sponsorId));
+        if (!snap.exists()) return null;
+        return { id: snap.id, ...(snap.data() as Omit<Sponsor, 'id'>) };
+      }),
+    ).then((loadedSponsors) => {
+      setSponsors(loadedSponsors.filter((s): s is Sponsor => s !== null));
     });
-  }, [session?.sponsorId]);
+  }, [session?.sponsorId, session?.sponsorIds]);
 
   const sortedTeams = [...teams].sort(
     (a, b) => b.currentSessionScore - a.currentSessionScore,
@@ -113,7 +127,9 @@ export function LobbyScreen() {
         />
       </View>
 
-      {sponsor ? <SponsorCard sponsor={sponsor} /> : null}
+      {sponsors.map((sponsor) => (
+        <SponsorCard key={sponsor.id} sponsor={sponsor} />
+      ))}
 
       {session.settings.showTeamScores && sortedTeams.length > 0 ? (
         <View style={styles.scoresSection}>

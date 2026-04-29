@@ -30,6 +30,7 @@ export interface AuthContextValue {
     teamId: string | null,
   ) => Promise<void>;
   signOut: () => Promise<void>;
+  setUserTeam: (teamId: string | null) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -89,9 +90,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setFirebaseUser(null);
   }, []);
 
+  const setUserTeam = useCallback((teamId: string | null) => {
+    setUser((prev) => (prev ? { ...prev, teamId } : prev));
+  }, []);
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, firebaseUser, isLoading, signIn, signUp, signOut }),
-    [user, firebaseUser, isLoading, signIn, signUp, signOut],
+    () => ({
+      user,
+      firebaseUser,
+      isLoading,
+      signIn,
+      signUp,
+      signOut,
+      setUserTeam,
+    }),
+    [user, firebaseUser, isLoading, signIn, signUp, signOut, setUserTeam],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -20,7 +20,7 @@ import { type GameSession, type Question } from '@/types';
 export interface CreateSessionInput {
   teamIds: string[];
   questionOrder: string[];
-  sponsorId: string;
+  sponsorIds: string[];
   settings: {
     showTeamScores: boolean;
     allowLateJoin: boolean;
@@ -34,7 +34,7 @@ export async function createSession(data: CreateSessionInput): Promise<string> {
       currentQuestionId: null,
       questionActive: false,
       questionStartTime: null,
-      sponsorId: data.sponsorId,
+      sponsorIds: data.sponsorIds,
       settings: data.settings,
       currentQuestion: null,
       correctOptionId: null,

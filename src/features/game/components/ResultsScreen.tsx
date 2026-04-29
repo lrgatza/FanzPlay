@@ -96,10 +96,17 @@ export function ResultsScreen() {
     (a, b) => b.currentSessionScore - a.currentSessionScore,
   );
   const winningTeam = sortedTeams[0] ?? null;
+  const sponsorCount =
+    session?.sponsorIds && session.sponsorIds.length > 0
+      ? session.sponsorIds.length
+      : session?.sponsorId
+        ? 1
+        : 0;
 
   const isOnWinningTeam =
     winningTeam !== null && user?.teamId === winningTeam.id;
-  const canClaimReward = isOnWinningTeam && user?.marketingOptIn === true;
+  const canClaimReward =
+    isOnWinningTeam && user?.marketingOptIn === true && sponsorCount > 0;
 
   function handleClaimReward() {
     router.push({
@@ -156,7 +163,8 @@ export function ResultsScreen() {
       {canClaimReward && (
         <View style={styles.rewardSection}>
           <Text style={styles.rewardHint}>
-            You qualified for a sponsor reward. Claim it below!
+            You qualified for a sponsor reward. Choose your reward and claim it
+            below!
           </Text>
           <Button
             label="Claim Your Reward"
@@ -175,9 +183,10 @@ export function ResultsScreen() {
         </Card>
       )}
 
-      {!session?.sponsorId ? null : (
+      {sponsorCount === 0 ? null : (
         <Text style={styles.sponsorLine}>
-          Powered by your sponsor · Session {sessionId}
+          Powered by {sponsorCount} sponsor{sponsorCount === 1 ? '' : 's'} ·
+          Session {sessionId}
         </Text>
       )}
 
