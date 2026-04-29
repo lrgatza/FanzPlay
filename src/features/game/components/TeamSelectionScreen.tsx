@@ -14,13 +14,14 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { AppColors, Spacing, Typography } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { updateUserTeam } from '@/features/auth/services/authService';
+import { subscribeToSession } from '@/features/game/services/gameService';
 import {
   canChangeSessionTeam,
   getSessionParticipant,
   upsertSessionTeamStrict,
 } from '@/features/game/services/sessionParticipantService';
-import { useTeams } from '@/features/teams/hooks/useTeams';
-import { type Team } from '@/types';
+import { subscribeToTeamsByIds } from '@/features/teams/services/teamService';
+import { type GameSession, type Team } from '@/types';
 
 function TeamRow({
   team,
@@ -59,7 +60,10 @@ export function TeamSelectionScreen() {
   const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
   const { user, setUserTeam } = useAuth();
-  const { teams, isLoading } = useTeams();
+  const [session, setSession] = useState<GameSession | null>(null);
+  const [sessionResolved, setSessionResolved] = useState(false);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [teamsResolved, setTeamsResolved] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [isCheckingLock, setIsCheckingLock] = useState(true);
   const [isLocked, setIsLocked] = useState(false);
@@ -67,7 +71,50 @@ export function TeamSelectionScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    setSessionResolved(false);
+    setSession(null);
+    const unsub = subscribeToSession(sessionId, (s) => {
+      setSession(s);
+      setSessionResolved(true);
+    });
+    return unsub;
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionResolved || !session?.teamIds?.length) {
+      setTeams([]);
+      setTeamsResolved(true);
+      return;
+    }
+    setTeamsResolved(false);
+    const unsub = subscribeToTeamsByIds(session.teamIds, (data) => {
+      const sorted = [...data].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+      );
+      setTeams(sorted);
+      setTeamsResolved(true);
+    });
+    return unsub;
+  }, [sessionResolved, session?.teamIds]);
+
+  useEffect(() => {
+    if (!user || !teamsResolved || !sessionResolved) return;
+
+    if (!session) {
+      setIsCheckingLock(false);
+      return;
+    }
+
+    if (!session.teamIds?.length) {
+      setIsCheckingLock(false);
+      return;
+    }
+
+    if (teams.length === 0) {
+      setIsCheckingLock(false);
+      return;
+    }
+
     setIsCheckingLock(true);
     setError(null);
     Promise.all([
@@ -75,7 +122,12 @@ export function TeamSelectionScreen() {
       canChangeSessionTeam(sessionId, user.uid),
     ])
       .then(([participant, canChange]) => {
-        setSelectedTeamId(participant?.teamId ?? user.teamId ?? null);
+        const preferred = participant?.teamId ?? user.teamId ?? null;
+        const valid =
+          preferred && teams.some((t) => t.id === preferred)
+            ? preferred
+            : null;
+        setSelectedTeamId(valid);
         setIsLocked(!canChange);
       })
       .catch(() => {
@@ -84,10 +136,30 @@ export function TeamSelectionScreen() {
       .finally(() => {
         setIsCheckingLock(false);
       });
-  }, [sessionId, user]);
+  }, [sessionId, user, session, sessionResolved, teams, teamsResolved]);
+
+  const sessionMissing = sessionResolved && !session;
+  const noSessionTeams =
+    sessionResolved &&
+    !!session &&
+    (!session.teamIds || session.teamIds.length === 0);
+
+  const teamsFetchEmpty =
+    teamsResolved &&
+    !!session?.teamIds?.length &&
+    teams.length === 0;
+
+  const isLoading =
+    !sessionResolved || !teamsResolved || isCheckingLock;
 
   async function handleConfirm() {
-    if (!selectedTeamId || !user || isLocked) return;
+    if (
+      !selectedTeamId ||
+      !user ||
+      isLocked ||
+      !session?.teamIds?.includes(selectedTeamId)
+    )
+      return;
     setIsSaving(true);
     setError(null);
     try {
@@ -98,8 +170,12 @@ export function TeamSelectionScreen() {
         pathname: '/(fan)/[sessionId]/lobby',
         params: { sessionId },
       });
-    } catch {
-      setError('Failed to save your team. Please try again.');
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : 'Failed to save your team. Please try again.',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -123,7 +199,19 @@ export function TeamSelectionScreen() {
         </Text>
       </View>
 
-      {isLoading || isCheckingLock ? (
+      {sessionMissing ? (
+        <Text style={styles.errorText}>
+          This game session could not be found.
+        </Text>
+      ) : noSessionTeams ? (
+        <Text style={styles.errorText}>
+          No teams are configured for this session yet.
+        </Text>
+      ) : teamsFetchEmpty ? (
+        <Text style={styles.errorText}>
+          Could not load teams for this session.
+        </Text>
+      ) : isLoading ? (
         <View style={styles.center}>
           <ActivityIndicator color={AppColors.accent} size="large" />
         </View>
