@@ -9,6 +9,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { AppColors, Spacing, Typography } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useGameSessions } from '@/features/game/hooks/useGameSessions';
+import { getSessionParticipant } from '@/features/game/services/sessionParticipantService';
 import { type GameSession } from '@/types';
 
 function SessionCard({
@@ -69,17 +70,27 @@ export function GameSelectionScreen() {
     router.replace('/(auth)/login');
   }
 
-  function handleSelectSession(session: GameSession) {
+  async function handleSelectSession(session: GameSession) {
     if (!user) return;
 
-    if (!user.teamId) {
+    try {
+      const participant = await getSessionParticipant(session.id, user.uid);
+      const hasSessionTeam = !!participant?.teamId;
+
+      if (!hasSessionTeam) {
+        router.push({
+          pathname: '/(fan)/team-selection',
+          params: { sessionId: session.id },
+        });
+      } else {
+        router.push({
+          pathname: '/(fan)/[sessionId]/lobby',
+          params: { sessionId: session.id },
+        });
+      }
+    } catch {
       router.push({
         pathname: '/(fan)/team-selection',
-        params: { sessionId: session.id },
-      });
-    } else {
-      router.push({
-        pathname: '/(fan)/[sessionId]/lobby',
         params: { sessionId: session.id },
       });
     }
