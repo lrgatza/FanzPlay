@@ -9,6 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -44,10 +46,13 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "jest-expo": "^55.0.16",
     "lint-staged": "^16.3.1",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
