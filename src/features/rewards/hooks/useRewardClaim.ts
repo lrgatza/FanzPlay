@@ -10,6 +10,8 @@ interface UseRewardClaimReturn {
     uid: string,
     sessionId: string,
     sponsorId: string,
+    firstName: string,
+    lastName: string,
     email: string,
     phone: string | null,
   ) => Promise<void>;
@@ -28,6 +30,8 @@ export function useRewardClaim(): UseRewardClaimReturn {
       uid: string,
       sessionId: string,
       sponsorId: string,
+      firstName: string,
+      lastName: string,
       email: string,
       phone: string | null,
     ) => {
@@ -39,7 +43,15 @@ export function useRewardClaim(): UseRewardClaimReturn {
           setSuccess(true);
           return;
         }
-        await createRewardClaim(uid, sessionId, sponsorId, email, phone);
+        await createRewardClaim(
+          uid,
+          sessionId,
+          sponsorId,
+          firstName,
+          lastName,
+          email,
+          phone,
+        );
         setSuccess(true);
       } catch (e) {
         setError(

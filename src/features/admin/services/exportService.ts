@@ -1,9 +1,16 @@
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+} from 'firebase/firestore';
 import { Linking, Platform } from 'react-native';
 
 import { db } from '@/api/firebase';
 import { COLLECTIONS } from '@/constants/firestore';
-import { type RewardClaim } from '@/types';
+import { type RewardClaim, type Sponsor } from '@/types';
 import { buildCsv } from '@/utils/csv';
 
 const CSV_HEADERS = [
@@ -11,6 +18,10 @@ const CSV_HEADERS = [
   'User ID',
   'Session ID',
   'Sponsor ID',
+  'Sponsor Name',
+  'Sponsor Reward',
+  'First Name',
+  'Last Name',
   'Email',
   'Phone',
   'Status',
@@ -39,16 +50,47 @@ export async function exportRewardClaimsAsCsv(
     ...(d.data() as Omit<RewardClaim, 'id'>),
   }));
 
-  const rows = claims.map((c) => [
-    c.id,
-    c.uid,
-    c.sessionId,
-    c.sponsorId,
-    c.email,
-    c.phone ?? '',
-    c.status,
-    formatTimestamp(c.createdAt),
-  ]);
+  const uniqueSponsorIds = [
+    ...new Set(claims.map((c) => c.sponsorId).filter(Boolean)),
+  ];
+  const sponsorById = new Map<
+    string,
+    { name: string; rewardDescription: string }
+  >();
+  await Promise.all(
+    uniqueSponsorIds.map(async (sponsorId) => {
+      const sponsorSnap = await getDoc(
+        doc(db, COLLECTIONS.SPONSORS, sponsorId),
+      );
+      if (!sponsorSnap.exists()) {
+        sponsorById.set(sponsorId, { name: '', rewardDescription: '' });
+        return;
+      }
+      const data = sponsorSnap.data() as Omit<Sponsor, 'id'>;
+      sponsorById.set(sponsorId, {
+        name: data.name ?? '',
+        rewardDescription: data.rewardDescription ?? '',
+      });
+    }),
+  );
+
+  const rows = claims.map((c) => {
+    const sp = sponsorById.get(c.sponsorId);
+    return [
+      c.id,
+      c.uid,
+      c.sessionId,
+      c.sponsorId,
+      sp?.name ?? '',
+      sp?.rewardDescription ?? '',
+      c.firstName ?? '',
+      c.lastName ?? '',
+      c.email,
+      c.phone ?? '',
+      c.status,
+      formatTimestamp(c.createdAt),
+    ];
+  });
 
   const csvString = buildCsv(CSV_HEADERS, rows);
 

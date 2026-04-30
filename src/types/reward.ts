@@ -7,6 +7,8 @@ export interface RewardClaim {
   uid: string;
   sessionId: string;
   sponsorId: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone: string | null;
   status: ClaimStatus;

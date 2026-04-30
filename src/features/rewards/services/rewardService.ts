@@ -7,6 +7,8 @@ export async function createRewardClaim(
   uid: string,
   sessionId: string,
   sponsorId: string,
+  firstName: string,
+  lastName: string,
   email: string,
   phone: string | null,
 ): Promise<void> {
@@ -17,6 +19,8 @@ export async function createRewardClaim(
     uid,
     sessionId,
     sponsorId,
+    firstName: firstName.trim(),
+    lastName: lastName.trim(),
     email: email.trim(),
     phone: phone?.trim() ?? null,
     status: 'pending',

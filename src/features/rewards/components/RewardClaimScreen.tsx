@@ -23,6 +23,10 @@ export function RewardClaimScreen() {
 
   const { submit, isSubmitting, error, success } = useRewardClaim();
 
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [firstNameError, setFirstNameError] = useState('');
+  const [lastNameError, setLastNameError] = useState('');
   const [email, setEmail] = useState(user?.email ?? '');
   const [phone, setPhone] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -70,6 +74,26 @@ export function RewardClaimScreen() {
       .finally(() => setIsLoadingSponsors(false));
   }, [session?.sponsorId, session?.sponsorIds]);
 
+  function validateFirstName(value: string): boolean {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setFirstNameError('First name is required.');
+      return false;
+    }
+    setFirstNameError('');
+    return true;
+  }
+
+  function validateLastName(value: string): boolean {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setLastNameError('Last name is required.');
+      return false;
+    }
+    setLastNameError('');
+    return true;
+  }
+
   function validateEmail(value: string): boolean {
     const trimmed = value.trim();
     if (!trimmed) {
@@ -85,6 +109,9 @@ export function RewardClaimScreen() {
   }
 
   async function handleSubmit() {
+    const okFirst = validateFirstName(firstName);
+    const okLast = validateLastName(lastName);
+    if (!okFirst || !okLast) return;
     if (!validateEmail(email)) return;
     if (!selectedSponsorId) {
       setSponsorError('Please select a reward first.');
@@ -97,6 +124,8 @@ export function RewardClaimScreen() {
       user.uid,
       sessionId,
       selectedSponsorId,
+      firstName.trim(),
+      lastName.trim(),
       email,
       phone.trim() || null,
     );
@@ -179,6 +208,33 @@ export function RewardClaimScreen() {
         )}
         {sponsorError ? <Text style={styles.errorText}>{sponsorError}</Text> : null}
 
+        <Text style={styles.sectionLabel}>Your name</Text>
+        <TextField
+          label="First name"
+          value={firstName}
+          onChangeText={(v) => {
+            setFirstName(v);
+            if (firstNameError) validateFirstName(v);
+          }}
+          autoCapitalize="words"
+          autoComplete="given-name"
+          error={firstNameError}
+          placeholder="Jane"
+        />
+        <TextField
+          label="Last name"
+          value={lastName}
+          onChangeText={(v) => {
+            setLastName(v);
+            if (lastNameError) validateLastName(v);
+          }}
+          autoCapitalize="words"
+          autoComplete="family-name"
+          error={lastNameError}
+          placeholder="Doe"
+        />
+
+        <Text style={styles.sectionLabel}>Contact</Text>
         <TextField
           label="Email Address"
           value={email}
